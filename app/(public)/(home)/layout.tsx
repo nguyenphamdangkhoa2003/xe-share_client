@@ -1,3 +1,4 @@
+import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import React from 'react';
 
@@ -8,7 +9,9 @@ function Homelayout({
 }>) {
     return (
         <div>
-            {children}
+            <Navbar />
+            <main className="flex-grow">{children}</main>
+            <Footer />
         </div>
     );
 }
