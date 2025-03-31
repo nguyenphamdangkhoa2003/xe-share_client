@@ -26,7 +26,7 @@ export default function Footer() {
           <h3 className="text-lg font-semibold text-blue-600">Liên hệ</h3>
           <p className="text-gray-600 mt-2">SĐT: 1234567890</p>
           <p className="text-gray-600">Email: company@email.com</p>
-          <p className="text-gray-600">Địa chỉ: 100 Smart Street, LA, USA</p>
+          <p className="text-gray-600">Địa chỉ: 180 Cao Lỗ, Q.8, TP.HCM</p>
 
           {/* Social Icons */}
           <div className="flex gap-3 mt-3">
