@@ -36,32 +36,39 @@ const SignUpPage = () => {
     };
 
     const handleSignUp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsPending(true);
-        setError('');
+    e.preventDefault();
+    setIsPending(true);
+    setError('');
 
-        if (!isLoaded) return;
+    if (!isLoaded) return;
 
-        if (form.password !== form.repassword) {
-            setError('Mật khẩu nhập lại không khớp!');
-            setIsPending(false);
-            return;
-        }
+    if (form.password !== form.repassword) {
+        setError('Mật khẩu nhập lại không khớp!');
+        setIsPending(false);
+        return;
+    }
 
-        try {
-            await signUp.create({
-                emailAddress: form.email,
-                password: form.password,
-            });
+    try {
+        const [firstName, ...lastNameArr] = form.fullName.trim().split(' ');
+        const lastName = lastNameArr.join(' ');
 
-            await signUp.prepareEmailAddressVerification();
-            setIsPending(false);
-            router.push('/verify-email');
-        } catch (err: any) {
-            setError(err.errors[0]?.message || 'Có lỗi xảy ra');
-            setIsPending(false);
-        }
-    };
+        const response = await signUp.create({
+            emailAddress: form.email,
+            password: form.password,
+            firstName: firstName || '', 
+            lastName: lastName || '',
+        });
+        
+
+        await signUp.prepareEmailAddressVerification(); 
+        setIsPending(false);
+        router.push('/verify-email');
+    } catch (err: any) {
+        setError(err.errors[0]?.message || 'Có lỗi xảy ra');
+        setIsPending(false);
+    }
+};
+
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6">
@@ -80,6 +87,7 @@ const SignUpPage = () => {
                     )}
 
                     <form onSubmit={handleSignUp} className="space-y-4">
+                        
                         {/* Họ và tên */}
                         <div className="space-y-2">
                             <Label htmlFor="fullName">Họ và tên</Label>
@@ -181,7 +189,7 @@ const SignUpPage = () => {
                                 </Button>
                             </div>
                         </div>
-
+                         <div id="clerk-captcha"></div>                   
                         {/* Nút đăng ký */}
                         <Button
                             type="submit"
