@@ -1,8 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
-import UserButton from '@/components/UserButton';
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -68,7 +67,7 @@ const Navbar = () => {
                         </div>
                     </SignedOut>
                     <SignedIn>
-                        <UserButton />
+                        <UserButton showName />
                     </SignedIn>
 
                     {/* Hamburger Menu Button */}
