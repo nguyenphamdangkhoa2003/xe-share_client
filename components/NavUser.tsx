@@ -24,17 +24,27 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { SignOutButton } from '@clerk/nextjs';
 
 export function NavUser({
     user,
 }: {
     user: {
-        name: string;
-        email: string;
-        avatar: string;
+        name?: string | null;
+        email?: string | null;
+        avatar?: string | null;
     };
 }) {
     const { isMobile } = useSidebar();
+
+    // Fallback initials for avatar
+    const getInitials = (name?: string | null) => {
+        if (!name) return 'US';
+        const names = name.split(' ');
+        return names.length > 1
+            ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+            : name.substring(0, 2).toUpperCase();
+    };
 
     return (
         <SidebarMenu>
@@ -45,20 +55,22 @@ export function NavUser({
                             size="lg"
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                             <Avatar className="h-8 w-8 rounded-lg grayscale">
-                                <AvatarImage
-                                    src={user.avatar}
-                                    alt={user.name}
-                                />
+                                {user.avatar && (
+                                    <AvatarImage
+                                        src={user.avatar}
+                                        alt={user.name || ''}
+                                    />
+                                )}
                                 <AvatarFallback className="rounded-lg">
-                                    CN
+                                    {getInitials(user.name)}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-medium">
-                                    {user.name}
+                                    {user.name || 'User'}
                                 </span>
                                 <span className="truncate text-xs text-muted-foreground">
-                                    {user.email}
+                                    {user.email || 'No email provided'}
                                 </span>
                             </div>
                             <MoreVerticalIcon className="ml-auto size-4" />
@@ -72,20 +84,22 @@ export function NavUser({
                         <DropdownMenuLabel className="p-0 font-normal">
                             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                 <Avatar className="h-8 w-8 rounded-lg">
-                                    <AvatarImage
-                                        src={user.avatar}
-                                        alt={user.name}
-                                    />
+                                    {user.avatar && (
+                                        <AvatarImage
+                                            src={user.avatar}
+                                            alt={user.name || ''}
+                                        />
+                                    )}
                                     <AvatarFallback className="rounded-lg">
-                                        CN
+                                        {getInitials(user.name)}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">
-                                        {user.name}
+                                        {user.name || 'User'}
                                     </span>
                                     <span className="truncate text-xs text-muted-foreground">
-                                        {user.email}
+                                        {user.email || 'No email provided'}
                                     </span>
                                 </div>
                             </div>
@@ -107,8 +121,7 @@ export function NavUser({
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                            <LogOutIcon />
-                            Log out
+                            <SignOutButton />
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
