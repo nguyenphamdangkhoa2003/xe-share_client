@@ -7,6 +7,7 @@ import {
     MoreVerticalIcon,
     UserCircleIcon,
 } from 'lucide-react';
+import { getInitials } from '@/utils/index';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -36,15 +37,6 @@ export function NavUser({
     };
 }) {
     const { isMobile } = useSidebar();
-
-    // Fallback initials for avatar
-    const getInitials = (name?: string | null) => {
-        if (!name) return 'US';
-        const names = name.split(' ');
-        return names.length > 1
-            ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
-            : name.substring(0, 2).toUpperCase();
-    };
 
     return (
         <SidebarMenu>

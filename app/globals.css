@@ -1,8 +1,5 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-* {
-    box-sizing: border-box;
-}
 /* Cusom clerk */
 .cl-internal-1dauvpw {
     display: none !important;

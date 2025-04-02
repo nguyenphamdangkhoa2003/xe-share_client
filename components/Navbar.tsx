@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn, Menu, X } from 'lucide-react';
+import { MdOutlineAdminPanelSettings } from 'react-icons/md';
 
 const Navbar = () => {
     const { user } = useUser();
@@ -67,7 +68,19 @@ const Navbar = () => {
                         </div>
                     </SignedOut>
                     <SignedIn>
-                        <UserButton showName />
+                        <UserButton showName>
+                            {user?.publicMetadata.role === 'admin' ? (
+                                <UserButton.MenuItems>
+                                    <UserButton.Action
+                                        label="Admin Site"
+                                        labelIcon={
+                                            <MdOutlineAdminPanelSettings />
+                                        }
+                                        onClick={() => router.push('/admin')}
+                                    />
+                                </UserButton.MenuItems>
+                            ) : null}
+                        </UserButton>
                     </SignedIn>
 
                     {/* Hamburger Menu Button */}

@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSlidbar';
 import { ClerkProvider } from '@clerk/nextjs';
+import TanstackProvider from '@/components/providers/TanstackProvider';
 
 function AdminLayout({
     children,
@@ -13,17 +14,19 @@ function AdminLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <SidebarProvider>
-            <AppSidebar variant="inset" />
-            <div className="flex flex-1 flex-col ">
-                <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                        <SidebarTrigger />
-                        {children}
+        <TanstackProvider>
+            <SidebarProvider>
+                <AppSidebar variant="inset" />
+                <div className="flex flex-1 flex-col">
+                    <div className="@container/main flex flex-1 flex-col gap-2">
+                        <div className="flex flex-col gap-4 p-4 md:gap-6 md:py-6">
+                            <SidebarTrigger />
+                            {children}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </SidebarProvider>
+            </SidebarProvider>
+        </TanstackProvider>
     );
 }
 
