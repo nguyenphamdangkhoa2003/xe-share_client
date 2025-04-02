@@ -10,7 +10,7 @@ function Homelayout({
     return (
         <div>
             <Navbar />
-            <main className="flex-grow mt-10">{children}</main>
+            <main className="flex-grow mt-10 ">{children}</main>
             <Footer />
         </div>
     );

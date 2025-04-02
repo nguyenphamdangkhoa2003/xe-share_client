@@ -34,7 +34,7 @@ export default function ContactPage() {
             <FaPhone className="text-blue-600" /> <span>+84 123 456 789</span>
           </div>
           <div className="flex items-center gap-2 mb-2">
-            <FaEnvelope className="text-blue-600" /> <span>contact@datxedichung.com</span>
+            <FaEnvelope className="text-blue-600" /> <span>contact@xeshare.com</span>
           </div>
           <div className="flex items-center gap-2 mb-4">
             <FaMapMarkerAlt className="text-blue-600" />

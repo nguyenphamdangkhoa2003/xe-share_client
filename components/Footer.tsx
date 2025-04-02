@@ -25,12 +25,12 @@ export default function Footer() {
         <div className="flex flex-col items-center md:items-start">
           <h3 className="text-lg font-semibold text-blue-600">Liên hệ</h3>
           <p className="text-gray-600 mt-2">SĐT: 1234567890</p>
-          <p className="text-gray-600">Email: company@email.com</p>
+          <p className="text-gray-600">Email: contact@xeshare.com</p>
           <p className="text-gray-600">Địa chỉ: 180 Cao Lỗ, Q.8, TP.HCM</p>
 
           {/* Social Icons */}
           <div className="flex gap-3 mt-3">
-            <a href="#" className="text-blue-600 hover:text-blue-800">
+            <a href="https://www.facebook.com/home.php" target="_blank" className="text-blue-600 hover:text-blue-800">
               <FaFacebook size={24} />
             </a>
             <a href="#" className="text-blue-400 hover:text-blue-600">

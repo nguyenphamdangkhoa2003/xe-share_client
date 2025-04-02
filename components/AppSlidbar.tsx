@@ -64,6 +64,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         title: 'About',
                         url: '/admin/settings/aboutpage',
                     },
+                    {
+                        title: 'Footer',
+                        url: '/admin/settings/footer',
+                    },
                 ],
             },
         ],

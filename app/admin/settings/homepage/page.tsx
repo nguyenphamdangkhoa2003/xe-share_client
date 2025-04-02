@@ -9,19 +9,41 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 type ContentState = {
   title: string;
+  image: File | null;
   paragraphs: string[];
   subContents: { subTitle: string; subText: string }[];
 };
 
 export default function HomePage() {
   const [banner, setBanner] = useState<File | null>(null);
-  const [content1, setContent1] = useState<ContentState>({ title: "", paragraphs: [""], subContents: [] });
-  const [content2, setContent2] = useState<ContentState>({ title: "", paragraphs: [""], subContents: [] });
+  const [content1, setContent1] = useState<ContentState>({ 
+    title: "", 
+    image: null,
+    paragraphs: [""], 
+    subContents: [] 
+  });
+  const [content2, setContent2] = useState<ContentState>({ 
+    title: "", 
+    image: null,
+    paragraphs: [""], 
+    subContents: [] 
+  });
 
   // Xử lý upload banner
   const handleBannerUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files?.length) {
       setBanner(event.target.files[0]);
+    }
+  };
+
+  // Xử lý upload hình ảnh cho nội dung
+  const handleContentImageUpload = (
+    event: React.ChangeEvent<HTMLInputElement>, 
+    contentState: ContentState, 
+    setContent: React.Dispatch<React.SetStateAction<ContentState>>
+  ) => {
+    if (event.target.files?.length) {
+      setContent({ ...contentState, image: event.target.files[0] });
     }
   };
 
@@ -88,7 +110,7 @@ export default function HomePage() {
 
   return (
     <div className="p-3">
-      <h2 className="border-b pb-2 text-3xl font-semibold tracking-tight">Setting home page</h2>
+      <h2 className="border-b pb-2 text-3xl font-semibold tracking-tight">Cấu hình Trang Chủ</h2>
 
       <div className="container mx-auto py-10 space-y-10 max-w-lvh">
         {/* Phần 1: Thêm Banner */}
@@ -127,12 +149,46 @@ export default function HomePage() {
             <CardTitle>Thêm Nội Dung 1</CardTitle>
           </CardHeader>
           <CardContent>
-            <Input value={content1.title} onChange={(e) => setContent1({ ...content1, title: e.target.value })} placeholder="Nhập tiêu đề" />
+            {/* Phần hình ảnh cho nội dung 1 */}
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2">Hình ảnh nội dung (không bắt buộc)</h3>
+              <div className="border p-4 rounded-lg flex flex-col items-center">
+                {content1.image ? (
+                  <div className="w-full flex items-center justify-between">
+                    <span className="truncate">{content1.image.name}</span>
+                    <Button variant="destructive" size="icon" onClick={() => setContent1({ ...content1, image: null })}>
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center cursor-pointer">
+                    <CloudUpload className="w-8 h-8 text-gray-500" />
+                    <span className="mt-2 text-sm text-gray-500">Nhấn để tải lên</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => handleContentImageUpload(e, content1, setContent1)} 
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <Input 
+              value={content1.title} 
+              onChange={(e) => setContent1({ ...content1, title: e.target.value })} 
+              placeholder="Nhập tiêu đề" 
+            />
 
             {/* Phần đoạn văn */}
             {content1.paragraphs.map((text, index) => (
               <div key={`para-${index}`} className="mt-3 flex items-center space-x-2">
-                <Textarea value={text} onChange={(e) => handleParagraphChange(index, e.target.value, content1, setContent1)} placeholder="Nhập nội dung" />
+                <Textarea 
+                  value={text} 
+                  onChange={(e) => handleParagraphChange(index, e.target.value, content1, setContent1)} 
+                  placeholder="Nhập nội dung" 
+                />
                 <Button variant="destructive" size="icon" onClick={() => removeParagraph(index, content1, setContent1)}>
                   <Trash className="w-4 h-4" />
                 </Button>
@@ -163,7 +219,7 @@ export default function HomePage() {
               </div>
             ))}
 
-            <Button className="mt-4" onClick={() => addSubContent(content1, setContent1)} variant="outline">
+            <Button className="mt-4 md:ml-2" onClick={() => addSubContent(content1, setContent1)} variant="outline">
               <Plus className="mr-2 w-4 h-4" /> Thêm tiêu đề phụ
             </Button>
 
@@ -181,12 +237,46 @@ export default function HomePage() {
             <CardTitle>Thêm Nội Dung 2</CardTitle>
           </CardHeader>
           <CardContent>
-            <Input value={content2.title} onChange={(e) => setContent2({ ...content2, title: e.target.value })} placeholder="Nhập tiêu đề" />
+            {/* Phần hình ảnh cho nội dung 2 */}
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2">Hình ảnh nội dung (không bắt buộc)</h3>
+              <div className="border p-4 rounded-lg flex flex-col items-center">
+                {content2.image ? (
+                  <div className="w-full flex items-center justify-between">
+                    <span className="truncate">{content2.image.name}</span>
+                    <Button variant="destructive" size="icon" onClick={() => setContent2({ ...content2, image: null })}>
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center cursor-pointer">
+                    <CloudUpload className="w-8 h-8 text-gray-500" />
+                    <span className="mt-2 text-sm text-gray-500">Nhấn để tải lên</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => handleContentImageUpload(e, content2, setContent2)} 
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <Input 
+              value={content2.title} 
+              onChange={(e) => setContent2({ ...content2, title: e.target.value })} 
+              placeholder="Nhập tiêu đề" 
+            />
 
             {/* Phần đoạn văn */}
             {content2.paragraphs.map((text, index) => (
               <div key={`para-${index}`} className="mt-3 flex items-center space-x-2">
-                <Textarea value={text} onChange={(e) => handleParagraphChange(index, e.target.value, content2, setContent2)} placeholder="Nhập nội dung" />
+                <Textarea 
+                  value={text} 
+                  onChange={(e) => handleParagraphChange(index, e.target.value, content2, setContent2)} 
+                  placeholder="Nhập nội dung" 
+                />
                 <Button variant="destructive" size="icon" onClick={() => removeParagraph(index, content2, setContent2)}>
                   <Trash className="w-4 h-4" />
                 </Button>
@@ -217,7 +307,7 @@ export default function HomePage() {
               </div>
             ))}
 
-            <Button className="mt-4" onClick={() => addSubContent(content2, setContent2)} variant="outline">
+            <Button className="mt-4 md:ml-2" onClick={() => addSubContent(content2, setContent2)} variant="outline">
               <Plus className="mr-2 w-4 h-4" /> Thêm tiêu đề phụ
             </Button>
 
