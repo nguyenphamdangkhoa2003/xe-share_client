@@ -8,6 +8,9 @@ import {
     FileTextIcon,
     LayoutDashboardIcon,
     Users,
+    Settings,
+    ChevronDownIcon,
+    ChevronRightIcon,
 } from 'lucide-react';
 
 import { NavMain } from '@/components/NavMain';
@@ -23,9 +26,11 @@ import {
 } from '@/components/ui/sidebar';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { user, isLoaded } = useUser();
+    
     const data = {
         user: {
             name: user?.fullName || null,
@@ -43,9 +48,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 url: '/admin/users',
                 icon: Users,
             },
+            {
+                title: 'Settings',
+                icon: Settings,
+                submenu: [
+                    {
+                        title: 'Home',
+                        url: '/admin/settings/homepage',
+                    },
+                    {
+                        title: 'Contact',
+                        url: '/admin/settings/contactpage',
+                    },
+                    {
+                        title: 'About',
+                        url: '/admin/settings/aboutpage',
+                    },
+                ],
+            },
         ],
     };
+
     if (!isLoaded) return 'Loading ...';
+    
     return (
         <Sidebar collapsible="offcanvas" {...props}>
             <SidebarHeader>
