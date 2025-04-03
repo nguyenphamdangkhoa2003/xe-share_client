@@ -17,8 +17,6 @@ import { use, useState, useEffect } from 'react';
 import { EmailAddress, User } from '@/api/users/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadButton } from '@/components/ButtonUpload';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { MdOutlineVerified } from 'react-icons/md';
 import { Badge } from '@/components/ui/badge';
 import { FaPlus } from 'react-icons/fa6';
@@ -34,6 +32,7 @@ import {
 import { UserDetailDataTable } from '@/app/admin/users/[id]/UserDetailTableData';
 import { ExternalAccount } from '@clerk/nextjs/server';
 import { FaGithub } from 'react-icons/fa';
+import { PersonInformationForm } from '@/components/form/PersonInformationForm';
 
 interface Params {
     id: string;
@@ -166,7 +165,6 @@ export default function UserPage({ params }: { params: Params }) {
         },
     ];
     const handleUploadAvatar = () => {};
-    console.log(user.externalAccounts);
     return (
         <div className="flex flex-col items-start gap-4 p-4">
             <Button
@@ -246,34 +244,13 @@ export default function UserPage({ params }: { params: Params }) {
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex gap-16">
-                                <div className="grid w-full max-w-sm items-center gap-1.5">
-                                    <Label htmlFor="firstnam">Firstname</Label>
-                                    <Input
-                                        type="email"
-                                        id="firstnam"
-                                        placeholder="Firstname"
-                                    />
-                                </div>
-                                <div className="grid w-full max-w-sm items-center gap-1.5">
-                                    <Label htmlFor="lastname">lastname</Label>
-                                    <Input
-                                        type="text"
-                                        id="lastname"
-                                        placeholder="Lastname"
-                                    />
-                                </div>
-                                <div className="flex items-end gap-2">
-                                    <Button className="cursor-pointer">
-                                        Save
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="cursor-pointer">
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </div>
+                            <PersonInformationForm
+                                id={id}
+                                initialValues={{
+                                    firstName: user.firstName || '',
+                                    lastName: user.lastName || '',
+                                }}
+                            />
                         </CardContent>
                     </Card>
                     <Card>
