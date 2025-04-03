@@ -4,8 +4,9 @@ import Image from 'next/image';
 
 export default function Home() {
     return (
-        <div>
-            <Banner src="/images/banner.webp" alt="Banner Image" />
+        <div className='md:pt-9 pt-7'>
+            <Banner src="/images/banner.jpg" alt="Banner Image" />
+
             <div className="mb-4">
                 <SearchTrip />
             </div>
@@ -51,7 +52,7 @@ export default function Home() {
                 </div>
 
                 {/* Nội dung mở rộng */}
-                <div className="flex-1">
+                <div className="flex-1 md:pb-1 md:px-1 pb-5 px-6">
                     <h2 className="text-2xl font-bold text-black text-center sm:text-left">
                         Lợi ích của việc đi chung xe
                     </h2>

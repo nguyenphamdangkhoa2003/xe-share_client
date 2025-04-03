@@ -24,6 +24,14 @@ const Navbar = () => {
                         height={200}
                         width={200}
                         alt="Logo"
+                        className='md:block hidden'
+                    />
+                    <Image
+                        src="/images/logo.png"
+                        height={100}
+                        width={150}
+                        alt="Logo"
+                        className='md:hidden block'
                     />
                 </Link>
 
