@@ -17,7 +17,7 @@ import { MoreHorizontal } from 'lucide-react';
 import { CiTrash } from 'react-icons/ci';
 import { MdEditNote } from 'react-icons/md';
 
-import { FaEye } from 'react-icons/fa6';
+import { CgProfile } from 'react-icons/cg';
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -126,7 +126,7 @@ export const columns: ColumnDef<User>[] = [
                             <Link
                                 className="flex gap-2 items-center cursor-pointer"
                                 href={`/admin/users/${row.original.id}`}>
-                                <FaEye />
+                                <CgProfile />
                                 View
                             </Link>
                         </DropdownMenuItem>

@@ -9,7 +9,7 @@ export const getUsers = async (search?: string) => {
 };
 
 export const getUserById = async (userId: string) => {
-    return fetchClerkApi(`/users?user_id=${userId}`);
+    return fetchClerkApi(`/users/${userId}`);
 };
 
 export const updateUser = async (userId: string, data: any) => {
