@@ -4,14 +4,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FaArrowLeftLong } from 'react-icons/fa6';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getInitials } from '@/utils';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { getUserById } from '@/api/users/users';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/ui/loading';
 import { FcGoogle } from 'react-icons/fc';
 import { TbLock } from 'react-icons/tb';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, MoreHorizontal, Trash } from 'lucide-react';
+import { AlertCircle, Link, MoreHorizontal, Trash } from 'lucide-react';
 import { CiMail } from 'react-icons/ci';
 import { use, useState, useEffect } from 'react';
 import { EmailAddress, User } from '@/api/users/types';
@@ -21,6 +21,11 @@ import { MdOutlineVerified } from 'react-icons/md';
 import { Badge } from '@/components/ui/badge';
 import { FaPlus } from 'react-icons/fa6';
 import { ColumnDef } from '@tanstack/react-table';
+
+import { UserDetailDataTable } from '@/app/admin/users/[id]/UserDetailTableData';
+import { ExternalAccount } from '@clerk/nextjs/server';
+import { FaGithub } from 'react-icons/fa';
+import { PersonInformationForm } from '@/components/form/PersonInformationForm';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,11 +33,9 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@radix-ui/react-dropdown-menu';
-import { UserDetailDataTable } from '@/app/admin/users/[id]/UserDetailTableData';
-import { ExternalAccount } from '@clerk/nextjs/server';
-import { FaGithub } from 'react-icons/fa';
-import { PersonInformationForm } from '@/components/form/PersonInformationForm';
+} from '@/components/ui/dropdown-menu';
+import { deleteEmail } from '@/api/email/email';
+import { toast } from 'sonner';
 
 interface Params {
     id: string;
@@ -43,9 +46,20 @@ export default function UserPage({ params }: { params: Params }) {
     const { id } = unwrapParams;
     const [user, setUser] = useState<User>();
 
-    const { data, isLoading, error, isSuccess } = useQuery({
+    const { data, isLoading, error, isSuccess, refetch } = useQuery({
         queryKey: ['user', id],
         queryFn: () => getUserById(id),
+    });
+    const deleteMutation = useMutation({
+        mutationFn: (emailId: string) => deleteEmail(emailId),
+        onError: (error) => {
+            return toast.error(error.message);
+        },
+        onSuccess: (data) => {
+            console.log(data);
+            toast.success('Deleted successful');
+            refetch();
+        },
     });
     useEffect(() => {
         if (isSuccess && data) {
@@ -113,9 +127,26 @@ export default function UserPage({ params }: { params: Params }) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem></DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                disabled={
+                                    row.original.id ===
+                                    user.primaryEmailAddressId
+                                }>
+                                Set as primary
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer">
+                                Mark as unverified
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="text-red-600 cursor-pointer"
+                                disabled={deleteMutation.isPending}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteMutation.mutate(row.original.id);
+                                }}>
+                                Remove email
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );
@@ -279,10 +310,7 @@ export default function UserPage({ params }: { params: Params }) {
                                     None
                                 </div>
                             ) : (
-                                <UserDetailDataTable
-                                    columns={socialColumns}
-                                    data={user.externalAccounts}
-                                />
+                                <div></div>
                             )}
                         </CardContent>
                     </Card>

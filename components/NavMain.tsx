@@ -27,12 +27,14 @@ export function NavMain({
         }[];
     }[];
 }) {
-    const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+    const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>(
+        {}
+    );
 
     const toggleSubmenu = (title: string) => {
-        setOpenSubmenus(prev => ({
+        setOpenSubmenus((prev) => ({
             ...prev,
-            [title]: !prev[title]
+            [title]: !prev[title],
         }));
     };
 
@@ -50,24 +52,26 @@ export function NavMain({
                                         if (item.submenu) {
                                             toggleSubmenu(item.title);
                                         }
-                                    }}
-                                >
+                                    }}>
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex items-center gap-2">
-                                            {item.icon && <item.icon className="h-4 w-4" />}
+                                            {item.icon && (
+                                                <item.icon className="h-4 w-4" />
+                                            )}
                                             {item.url ? (
-                                                <Link href={item.url}>{item.title}</Link>
+                                                <Link href={item.url}>
+                                                    {item.title}
+                                                </Link>
                                             ) : (
                                                 <span>{item.title}</span>
                                             )}
                                         </div>
-                                        {item.submenu && (
-                                            openSubmenus[item.title] ? (
+                                        {item.submenu &&
+                                            (openSubmenus[item.title] ? (
                                                 <ChevronDown className="h-4 w-4" />
                                             ) : (
                                                 <ChevronRight className="h-4 w-4" />
-                                            )
-                                        )}
+                                            ))}
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -76,12 +80,14 @@ export function NavMain({
                                 <div className="ml-6 pl-2 border-l">
                                     <SidebarMenu>
                                         {item.submenu.map((subItem) => (
-                                            <SidebarMenuItem key={subItem.title}>
+                                            <SidebarMenuItem
+                                                key={subItem.title}>
                                                 <SidebarMenuButton
                                                     tooltip={subItem.title}
-                                                    className="cursor-pointer pl-6"
-                                                >
-                                                    <Link href={subItem.url}>{subItem.title}</Link>
+                                                    className="cursor-pointer pl-6">
+                                                    <Link href={subItem.url}>
+                                                        {subItem.title}
+                                                    </Link>
                                                 </SidebarMenuButton>
                                             </SidebarMenuItem>
                                         ))}

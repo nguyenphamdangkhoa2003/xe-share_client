@@ -7,6 +7,7 @@ import {
 import { AppSidebar } from '@/components/AppSlidbar';
 import { ClerkProvider } from '@clerk/nextjs';
 import TanstackProvider from '@/components/providers/TanstackProvider';
+import { Toaster } from 'sonner';
 
 function AdminLayout({
     children,
@@ -25,6 +26,7 @@ function AdminLayout({
                         </div>
                     </div>
                 </div>
+                <Toaster />
             </SidebarProvider>
         </TanstackProvider>
     );
