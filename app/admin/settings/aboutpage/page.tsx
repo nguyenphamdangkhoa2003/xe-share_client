@@ -4,8 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash, Plus, CloudUpload, Send } from "lucide-react";
+import { Trash, Plus, CloudUpload, Send, Facebook, Linkedin, Instagram, Twitter } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 type TeamMember = {
   id: string;
@@ -13,6 +20,9 @@ type TeamMember = {
   position: string;
   bio: string;
   image: File | null;
+  socialMedia?: {
+    [key: string]: string;
+  };
 };
 
 type ContentSection = {
@@ -20,6 +30,13 @@ type ContentSection = {
   title: string;
   content: string;
 };
+
+const socialMediaOptions = [
+  { value: "facebook", label: "Facebook", icon: Facebook, color: "text-blue-600" },
+  { value: "linkedin", label: "LinkedIn", icon: Linkedin, color: "text-blue-700" },
+  { value: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-600" },
+  { value: "twitter", label: "Twitter", icon: Twitter, color: "text-blue-400" },
+];
 
 export default function AboutPage() {
   // State cho từng phần
@@ -31,6 +48,11 @@ export default function AboutPage() {
 
   const [contentSections, setContentSections] = useState<ContentSection[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  // State cho thêm mạng xã hội đội ngũ
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedSocial, setSelectedSocial] = useState("");
+  const [socialLinkInput, setSocialLinkInput] = useState("");
 
   // ========== Xử lý Introduction ==========
   const handleIntroImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +101,7 @@ export default function AboutPage() {
         position: "",
         bio: "",
         image: null,
+        socialMedia: {},
       },
     ]);
   };
@@ -100,6 +123,40 @@ export default function AboutPage() {
   const handleTeamSubmit = () => {
     console.log("Team members submitted:", teamMembers);
     alert("Đã lưu thông tin Đội ngũ!");
+  };
+
+  const handleAddMemberSocial = (memberId: string) => {
+    if (selectedSocial && socialLinkInput) {
+      setTeamMembers(
+        teamMembers.map((member) =>
+          member.id === memberId
+            ? {
+                ...member,
+                socialMedia: {
+                  ...member.socialMedia,
+                  [selectedSocial]: socialLinkInput,
+                },
+              }
+            : member
+        )
+      );
+      setSelectedSocial("");
+      setSocialLinkInput("");
+      setSelectedMemberId(null);
+    }
+  };
+
+  const handleRemoveMemberSocial = (memberId: string, platform: string) => {
+    setTeamMembers(
+      teamMembers.map((member) => {
+        if (member.id === memberId && member.socialMedia) {
+          const newSocialMedia = { ...member.socialMedia };
+          delete newSocialMedia[platform];
+          return { ...member, socialMedia: newSocialMedia };
+        }
+        return member;
+      })
+    );
   };
 
   return (
@@ -171,7 +228,7 @@ export default function AboutPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {contentSections.map((section,index) => (
+            {contentSections.map((section, index) => (
               <div key={section.id} className="border p-4 rounded-lg space-y-2 relative ">
                 <Button
                   variant="destructive"
@@ -225,7 +282,7 @@ export default function AboutPage() {
                 >
                   <Trash className="w-4 h-4" />
                 </Button>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-2">Ảnh thành viên</h3>
                   <div className="border p-4 rounded-lg flex flex-col items-center">
@@ -235,9 +292,9 @@ export default function AboutPage() {
                         <Button
                           variant="destructive"
                           size="icon"
-                          onClick={() => 
-                            setTeamMembers(teamMembers.map(m => 
-                              m.id === member.id ? {...m, image: null} : m
+                          onClick={() =>
+                            setTeamMembers(teamMembers.map((m) =>
+                              m.id === member.id ? { ...m, image: null } : m
                             ))
                           }
                         >
@@ -260,39 +317,128 @@ export default function AboutPage() {
                 </div>
                 <Input
                   value={member.name}
-                  onChange={(e) => 
-                    setTeamMembers(teamMembers.map(m => 
-                      m.id === member.id ? {...m, name: e.target.value} : m
+                  onChange={(e) =>
+                    setTeamMembers(teamMembers.map((m) =>
+                      m.id === member.id ? { ...m, name: e.target.value } : m
                     ))
                   }
                   placeholder="Tên thành viên"
                 />
                 <Input
                   value={member.position}
-                  onChange={(e) => 
-                    setTeamMembers(teamMembers.map(m => 
-                      m.id === member.id ? {...m, position: e.target.value} : m
+                  onChange={(e) =>
+                    setTeamMembers(teamMembers.map((m) =>
+                      m.id === member.id ? { ...m, position: e.target.value } : m
                     ))
                   }
                   placeholder="Vị trí"
                 />
                 <Textarea
                   value={member.bio}
-                  onChange={(e) => 
-                    setTeamMembers(teamMembers.map(m => 
-                      m.id === member.id ? {...m, bio: e.target.value} : m
+                  onChange={(e) =>
+                    setTeamMembers(teamMembers.map((m) =>
+                      m.id === member.id ? { ...m, bio: e.target.value } : m
                     ))
                   }
                   placeholder="Tiểu sử"
                   rows={3}
                 />
+
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Mạng xã hội</h3>
+                  <div className="space-y-2">
+                    {member.socialMedia && Object.entries(member.socialMedia).map(([platform, url]) => {
+                      const option = socialMediaOptions.find(opt => opt.value === platform);
+                      if (!option) return null;
+                      const Icon = option.icon;
+                      return (
+                        <div key={platform} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex items-center gap-2">
+                            <Icon className={`w-4 h-4 ${option.color}`} />
+                            <span className="text-sm font-medium">{option.label}</span>
+                            <span className="text-xs text-gray-500 truncate">{url}</span>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleRemoveMemberSocial(member.id, platform)}
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+
+                    {selectedMemberId === member.id && (
+                      <div className="flex gap-2 items-end mt-2">
+                        <div className="flex-1 space-y-2">
+                          <label className="text-xs font-medium">Chọn mạng xã hội</label>
+                          <Select value={selectedSocial} onValueChange={setSelectedSocial}>
+                            <SelectTrigger className="w-full text-xs">
+                              <SelectValue placeholder="Chọn" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {socialMediaOptions
+                                .filter(option => !(member.socialMedia && member.socialMedia[option.value]))
+                                .map((option) => (
+                                  <SelectItem key={option.value} value={option.value} className="text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <option.icon className={`w-4 h-4 ${option.color}`} />
+                                      {option.label}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <label className="text-xs font-medium">Đường dẫn</label>
+                          <Input
+                            type="url"
+                            className="text-xs"
+                            value={socialLinkInput}
+                            onChange={(e) => setSocialLinkInput(e.target.value)}
+                            placeholder="Nhập link"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddMemberSocial(member.id)}
+                          disabled={!selectedSocial || !socialLinkInput}
+                        >
+                          Thêm
+                        </Button>
+                      </div>
+                    )}
+
+                    {!selectedMemberId && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedMemberId(member.id)}
+                        className="mt-2"
+                      >
+                        <Plus className="mr-2 w-4 h-4" /> Thêm mạng xã hội
+                      </Button>
+                    )}
+                    {selectedMemberId === member.id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedMemberId(null)}
+                        className="mt-1 text-xs text-gray-500"
+                      >
+                        Hủy
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
             <div className="flex justify-between items-center">
               {teamMembers.length === 0 && (
                 <span className="text-gray-500">Chưa có thành viên nào</span>
               )}
-              
               <Button onClick={handleTeamSubmit}>
                 <Send className="mr-2 w-4 h-4 " /> Lưu Đội ngũ
               </Button>
