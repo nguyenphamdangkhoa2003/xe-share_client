@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, ChevronRight, Home } from "lucide-react";
 import { MdArrowRight } from "react-icons/md";
 import SearchTrip from "@/components/form/SearchTrip";
 import Link from "next/link";
@@ -59,8 +59,18 @@ const trips = [
 export default function BookingPage() {
     return (
         <div className="mx-auto p-4 md:p-6 bg-gray-50 min-h-screen">
+            {/* Breadcrumb */}
+            <div className="flex items-center text-sm text-gray-600 mb-2 mt-8 max-w-9/12 m-auto">
+                <Link href="/" className="flex text-blue-600 items-center hover:underline">
+                    <Home className="w-4 h-4 mr-1" />
+                    Trang chủ
+                </Link>
+                <ChevronRight className="w-4 h-4 mx-2 text-gray-400" />
+                <span className=" font-normal">Kết quả tìm kiếm</span>
+            </div>
+            
             {/* Search Section */}
-            <div className="mb-8 mt-10">
+            <div className="mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 text-center">
                     <span className="bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
                         Tìm chuyến đi phù hợp
