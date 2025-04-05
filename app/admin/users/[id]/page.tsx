@@ -1,204 +1,177 @@
 'use client';
+import { use, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+
+// API imports
+import {
+    deleteUserProfileImage,
+    getUserById,
+    updateUser,
+    uploadUserProfileImage,
+} from '@/api/users/users';
+import { addEmail, deleteEmail, updateEmail } from '@/api/email/email';
+
+// Type imports
+import {
+    User,
+    EmailAddress,
+    ExternalAccount,
+    SetPasswordData,
+} from '@/api/users/types';
+import { EmailDataForm } from '@/api/email/types';
+// Component imports
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FaArrowLeftLong } from 'react-icons/fa6';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getInitials } from '@/utils';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { getUserById, updateUser } from '@/api/users/users';
-import { useRouter } from 'next/navigation';
-import Loading from '@/components/ui/loading';
-import { FcGoogle } from 'react-icons/fc';
-import { TbLock } from 'react-icons/tb';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Link, MoreHorizontal, Trash } from 'lucide-react';
-import { CiMail } from 'react-icons/ci';
-import React, { use, useState, useEffect } from 'react';
-import { EmailAddress, SetPasswordData, User } from '@/api/users/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UploadButton } from '@/components/ButtonUpload';
-import { MdOutlineVerified } from 'react-icons/md';
-import { Badge } from '@/components/ui/badge';
-import { FaPlus } from 'react-icons/fa6';
-import { ColumnDef } from '@tanstack/react-table';
-import { CiWarning } from 'react-icons/ci';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Loading from '@/components/ui/loading';
 import { UserDetailDataTable } from '@/app/admin/users/[id]/UserDetailTableData';
-import { ExternalAccount } from '@/api/users/types';
-import { FaGithub } from 'react-icons/fa';
 import { PersonInformationForm } from '@/components/form/PersonInformationForm';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { addEmail, deleteEmail, updateEmail } from '@/api/email/email';
-import { toast } from 'sonner';
-import { EmailDataForm } from '@/api/email/types';
+import { UploadButton } from '@/components/ButtonUpload';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import PasswordDialog, {
+    setPasswordFormSchema,
+} from '@/components/PasswordDialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+// Icon imports
+import { FaArrowLeftLong } from 'react-icons/fa6';
+import { FaRegEdit } from 'react-icons/fa';
+import { FcGoogle } from 'react-icons/fc';
+import { TbLock } from 'react-icons/tb';
+import { AlertCircle, MoreHorizontal, Trash } from 'lucide-react';
+import { CiMail, CiWarning } from 'react-icons/ci';
+import { MdOutlineVerified } from 'react-icons/md';
+import { FaGithub } from 'react-icons/fa';
+
+// Utility imports
+import { getInitials } from '@/utils';
+import { ColumnDef } from '@tanstack/react-table';
 
 interface Params {
     id: string;
 }
-type UpdateEmailParams = {
-    emailId: string;
-    data: EmailDataForm;
-};
-type SetPasswordParams = {
-    user_id: string;
-    data: SetPasswordData;
-};
+
 const addEmailFormSchema = z.object({
     email_address: z.string().email({ message: 'Invalid email address' }),
     verified: z.boolean().default(false).optional(),
     primary: z.boolean().default(false).optional(),
 });
 
-const setPasswordFormSchema = z
-    .object({
-        password: z.string().min(8),
-        confirm_password: z.string(),
-        skip_password_checks: z.boolean(),
-        sign_out_of_other_sessions: z.boolean(),
-    })
-    .refine((data) => data.password === data.confirm_password, {
-        message: 'Confirmation password does not match',
-        path: ['password', 'confirm_password'],
-    });
-export default function UserPage({ params }: { params: Promise<Params> }) {
+export default function UserPage({
+    params: paramsPromise,
+}: {
+    params: Promise<Params>;
+}) {
     const router = useRouter();
-    const addEmailForm = useForm<z.infer<typeof addEmailFormSchema>>({
-        resolver: zodResolver(addEmailFormSchema),
-        defaultValues: {
-            email_address: '',
-            primary: false,
-            verified: false,
-        },
-    });
-    const setPasswordForm = useForm<z.infer<typeof setPasswordFormSchema>>({
-        resolver: zodResolver(setPasswordFormSchema),
-        defaultValues: {
-            password: '',
-            confirm_password: '',
-            sign_out_of_other_sessions: false,
-            skip_password_checks: false,
-        },
-    });
-    const unwrappedParams = use(params);
-    const { id } = unwrappedParams;
-    const [user, setUser] = useState<User>();
+    const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
-    const { data, isLoading, error, isSuccess, refetch } = useQuery({
+    const params = use(paramsPromise);
+    const { id } = params;
+
+    // Query for fetching user data
+    const {
+        data: user,
+        isLoading,
+        error,
+        refetch,
+    } = useQuery<User>({
         queryKey: ['user', id],
         queryFn: () => getUserById(id),
     });
+
+    // Mutations
     const deleteEmailMutation = useMutation({
-        mutationFn: (emailId: string) => deleteEmail(emailId),
-        onError: (error) => {
-            console.log(error);
-            toast.error(error.message);
-        },
-        onSuccess: (data) => {
-            console.log(data);
-            toast.success('Deleted successful');
+        mutationFn: deleteEmail,
+        onSuccess: () => {
+            toast.success('Email deleted successfully');
             refetch();
         },
+        onError: (error) => toast.error(error.message),
     });
 
     const updateEmailMutation = useMutation({
-        mutationFn: ({ emailId, data }: UpdateEmailParams) =>
-            updateEmail(emailId, data),
-        onSuccess: (data) => {
-            toast.success('Email Updated');
+        mutationFn: ({
+            emailId,
+            data,
+        }: {
+            emailId: string;
+            data: EmailDataForm;
+        }) => updateEmail(emailId, data),
+        onSuccess: () => {
+            toast.success('Email updated successfully');
             refetch();
         },
-        onError: (error) => {
-            return toast.error(error.message);
-        },
+        onError: (error) => toast.error(error.message),
     });
 
     const addEmailMutation = useMutation({
         mutationFn: (data: EmailDataForm) => addEmail(data),
-        onSuccess: (data) => {
+        onSuccess: () => {
+            toast.success('Email added successfully');
             refetch();
-            return toast.success('Email Created');
-        },
-        onError: (error) => {
-            return toast.error(error.message);
-        },
-    });
-
-    const setPasswordMutation = useMutation({
-        mutationFn: ({ user_id, data }: SetPasswordParams) =>
-            updateUser(user_id, data),
-        onSuccess: (data) => {
-            refetch();
-            return toast.success('Update password successful');
         },
         onError: (error) => toast.error(error.message),
     });
-    useEffect(() => {
-        if (isSuccess && data) {
-            setUser(data);
-        }
-    }, [isSuccess, data]);
 
-    if (isLoading) return <Loading />;
+    const deleteUserProfileImageMutation = useMutation({
+        mutationFn: (id: string) => deleteUserProfileImage(id),
+        onSuccess: (data) => refetch(),
+        onError: (error) => toast.error(error.message),
+    });
+    const setPasswordMutation = useMutation({
+        mutationFn: (data: SetPasswordData) => updateUser(id, data),
+        onSuccess: () => {
+            toast.success('Password updated successfully');
+            refetch();
+            setIsPasswordDialogOpen(false);
+        },
+        onError: (error) => toast.error(error.message),
+    });
 
-    if (error) {
-        return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>Failed to load user data</AlertDescription>
-            </Alert>
-        );
-    }
-
-    if (!user) {
-        return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>User not found</AlertDescription>
-            </Alert>
-        );
-    }
-
-    const email = user?.emailAddresses[0].emailAddress || 'No email provided';
-    const fullName = user?.firstName + ' ' + user?.lastName || 'User';
-    const role = user.publicMetadata.role || 'User';
+    const uploadAvatarMutation = useMutation({
+        mutationFn: ({ userId, file }: { userId: string; file: File }) =>
+            uploadUserProfileImage(userId, file),
+        onSuccess: (data) => {
+            toast.success('Upload avatar successful');
+            refetch();
+        },
+        onError: (error) => toast.error(error.message),
+    });
+    // Table column definitions
     const emailColumns: ColumnDef<EmailAddress>[] = [
         {
-            accessorKey: 'id',
+            accessorKey: 'emailAddress',
             cell: ({ row }) => (
-                <div
-                    key={row.id}
-                    className="flex items-center gap-2 p-2  rounded-md">
+                <div className="flex items-center gap-2 p-2">
                     <CiMail className="text-gray-500" />
                     <span className="font-medium text-gray-400">
                         {row.original.emailAddress}
@@ -208,161 +181,123 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                     ) : (
                         <CiWarning className="text-orange-500" />
                     )}
-                    {row.original.id === user.primaryEmailAddressId && (
-                        <Badge
-                            variant="outline"
-                            className="border-blue-200 text-blue-600">
-                            Primary
-                        </Badge>
+                    {row.original.id === user?.primaryEmailAddressId && (
+                        <span className="text-blue-600 text-xs">Primary</span>
                     )}
                 </div>
             ),
         },
         {
             id: 'actions',
-            cell: ({ row }) => {
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                                onClick={handleUpdateEmail(row.original.id, {
-                                    primary: !(
-                                        row.original.id ===
-                                        user.primaryEmailAddressId
-                                    ),
-                                })}
-                                className="cursor-pointer"
-                                disabled={
-                                    row.original.id ===
-                                    user.primaryEmailAddressId
-                                }>
-                                Set as primary
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="cursor-pointer"
-                                onClick={handleUpdateEmail(row.original.id, {
-                                    verified: !row.original.verification,
-                                })}>
-                                Mark as{' '}
-                                {row.original.verification
-                                    ? 'unverified'
-                                    : 'verified'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="text-red-600 cursor-pointer"
-                                disabled={deleteEmailMutation.isPending}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    deleteEmailMutation.mutate(row.original.id);
-                                }}>
-                                Remove email
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                );
-            },
-        },
-    ];
-
-    const socialColumns: ColumnDef<ExternalAccount>[] = [
-        {
-            accessorKey: 'id',
             cell: ({ row }) => (
-                <div className="flex gap-2 items-center cursor-pointer">
-                    {getIcon(row.original.provider)}
-                    <div className="text-muted-foreground">
-                        {row.original.username || row.original.emailAddress}
-                    </div>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                            onClick={() =>
+                                updateEmailMutation.mutate({
+                                    emailId: row.original.id,
+                                    data: {
+                                        primary: !(
+                                            row.original.id ===
+                                            user?.primaryEmailAddressId
+                                        ),
+                                    },
+                                })
+                            }
+                            disabled={
+                                row.original.id === user?.primaryEmailAddressId
+                            }>
+                            Set as primary
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() =>
+                                updateEmailMutation.mutate({
+                                    emailId: row.original.id,
+                                    data: {
+                                        verified: !row.original.verification,
+                                    },
+                                })
+                            }>
+                            Mark as{' '}
+                            {row.original.verification
+                                ? 'unverified'
+                                : 'verified'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="text-red-600"
+                            disabled={deleteEmailMutation.isPending}
+                            onClick={() =>
+                                deleteEmailMutation.mutate(row.original.id)
+                            }>
+                            Remove email
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             ),
         },
-        {
-            id: 'actions',
-            cell: ({ row }) => {
-                return (
-                    <Button variant="ghost" className="cursor-pointer">
-                        <Trash className="text-red-500" />
-                    </Button>
-                );
-            },
-        },
     ];
 
-    function getIcon(provider: string) {
-        switch (provider) {
-            case 'oauth_google':
-                return (
-                    <>
-                        <FcGoogle />
-                        <div className="font-bold">Google</div>
-                    </>
-                );
-            case 'oauth_github':
-                return (
-                    <>
-                        <FaGithub />
-                        <div className="font-bold">Github</div>
-                    </>
-                );
-        }
-    }
-
-    const handleUploadAvatar = () => {};
-
-    const handleAddEmail = (values: z.infer<typeof addEmailFormSchema>) => {
-        addEmailMutation.mutate({ user_id: user.id, ...values });
-    };
+    // Handlers
     const handleSetPassword = (
         values: z.infer<typeof setPasswordFormSchema>
     ) => {
-        setPasswordMutation.mutate({
-            user_id: user.id,
-            data: values,
-        });
+        setPasswordMutation.mutate(values);
     };
-    const handleUpdateEmail = (emailId: string, data: EmailDataForm) => {
-        return (e: React.MouseEvent) => {
-            e.preventDefault();
-            updateEmailMutation.mutate({ emailId, data });
-        };
+
+    const handleBack = () => router.back();
+
+    const handleUploadAvatar = (file: File) => {
+        uploadAvatarMutation.mutate({ userId: user?.id || '', file });
     };
+    // Loading state
+    if (isLoading) return <Loading />;
+
+    // Error state
+    if (error || !user) {
+        return (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                    {error?.message || 'User not found'}
+                </AlertDescription>
+                <Button variant="outline" onClick={handleBack} className="mt-4">
+                    Go Back
+                </Button>
+            </Alert>
+        );
+    }
+
+    const fullName =
+        `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Username';
+    const primaryEmail =
+        user.emailAddresses?.[0]?.emailAddress || 'No email provided';
+    const role = user.publicMetadata?.role || 'User';
     return (
-        <div className="flex flex-col items-start gap-4 p-4">
+        <div className="container mx-auto p-4 space-y-6">
             <Button
-                variant="link"
-                onClick={() => router.back()}
+                variant="ghost"
+                onClick={handleBack}
                 className="flex items-center gap-2">
-                <FaArrowLeftLong className="text-sm" />
-                Back to Users
+                <FaArrowLeftLong /> Back to Users
             </Button>
 
-            <div className="flex items-center gap-4 w-full p-6 rounded-sm shadow">
+            <div className="flex items-center gap-4 bg-white p-6 rounded-lg shadow">
                 <Avatar className="h-20 w-20">
                     {user.hasImage && (
-                        <AvatarImage
-                            src={user.imageUrl}
-                            alt={fullName}
-                            className="rounded-full"
-                        />
+                        <AvatarImage src={user.imageUrl} alt={fullName} />
                     )}
-                    <AvatarFallback className="rounded-full">
-                        {getInitials(fullName)}
-                    </AvatarFallback>
+                    <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
                 </Avatar>
-
-                <div className="grid flex-1 text-left gap-1">
-                    <span className="truncate font-medium text-lg">
-                        {fullName}
-                    </span>
-                    <span className="truncate text-muted-foreground">
-                        {email}
-                    </span>
+                <div className="space-y-1">
+                    <h2 className="text-xl font-semibold">{fullName}</h2>
+                    <p className="text-gray-600">{primaryEmail}</p>
+                    <p className="text-sm text-blue-600">Role: {role}</p>
                 </div>
             </div>
 
@@ -372,44 +307,36 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                     <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="profile" className="flex flex-col gap-5">
+                <TabsContent value="profile" className="space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Personal Information</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-4 w-full p-6 rounded-sm">
-                                <div className="flex flex-col justify-center items-center gap-3">
-                                    <Avatar className="h-20 w-20">
-                                        {user.hasImage && (
-                                            <AvatarImage
-                                                src={user.imageUrl}
-                                                alt={fullName}
-                                                className="rounded-full"
-                                            />
-                                        )}
-                                        <AvatarFallback className="rounded-full">
-                                            {getInitials(fullName)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <UploadButton
-                                        onFileSelected={handleUploadAvatar}
-                                    />
-                                </div>
-                                <div className="grid flex-1 text-left gap-1">
-                                    <span className="truncate font-medium text-lg">
-                                        {fullName}
-                                    </span>
-                                    <span className="truncate text-muted-foreground">
-                                        {email}
-                                    </span>
-                                    <span className="truncate text-sm text-blue-600">
-                                        Role: {role}
-                                    </span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        User ID: {user.id}
-                                    </span>
-                                </div>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-20 w-20">
+                                    {user.hasImage && (
+                                        <AvatarImage
+                                            src={user.imageUrl}
+                                            alt={fullName}
+                                        />
+                                    )}
+                                    <AvatarFallback>
+                                        {getInitials(fullName)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <UploadButton onUpload={handleUploadAvatar} />
+                                <Button
+                                    variant="outline"
+                                    className="cursor-pointer"
+                                    onClick={(e) => {
+                                        e.preventDefault(),
+                                            deleteUserProfileImageMutation.mutate(
+                                                user.id
+                                            );
+                                    }}>
+                                    Clear
+                                </Button>
                             </div>
                             <PersonInformationForm
                                 id={id}
@@ -420,391 +347,219 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                             />
                         </CardContent>
                     </Card>
+
                     <Card>
                         <CardHeader>
-                            <CardTitle>Email addresses</CardTitle>
+                            <CardTitle>Email Addresses</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="space-y-4">
                             <UserDetailDataTable
                                 columns={emailColumns}
-                                data={user.emailAddresses}
+                                data={user.emailAddresses || []}
                             />
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button
-                                        variant="link"
-                                        className="cursor-pointer">
-                                        + Add email
-                                    </Button>
+                                    <Button variant="link">+ Add email</Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
+                                <DialogContent>
                                     <DialogHeader>
                                         <DialogTitle>
                                             Add new email address
                                         </DialogTitle>
                                     </DialogHeader>
-                                    <Form {...addEmailForm}>
-                                        <form
-                                            onSubmit={addEmailForm.handleSubmit(
-                                                handleAddEmail
-                                            )}
-                                            className="space-y-8 py-10">
-                                            <FormField
-                                                control={addEmailForm.control}
-                                                name="email_address"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>
-                                                            Email address
-                                                        </FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="Enter email address"
-                                                                type="text"
-                                                                {...field}
-                                                            />
-                                                        </FormControl>
-
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={addEmailForm.control}
-                                                name="verified"
-                                                render={({ field }) => (
-                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                                        <FormControl>
-                                                            <Checkbox
-                                                                checked={
-                                                                    field.value
-                                                                }
-                                                                onCheckedChange={
-                                                                    field.onChange
-                                                                }
-                                                            />
-                                                        </FormControl>
-                                                        <div className="space-y-1 leading-none">
-                                                            <FormLabel>
-                                                                Mark as verified
-                                                            </FormLabel>
-
-                                                            <FormMessage />
-                                                        </div>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={addEmailForm.control}
-                                                name="primary"
-                                                render={({ field }) => (
-                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                                        <FormControl>
-                                                            <Checkbox
-                                                                checked={
-                                                                    field.value
-                                                                }
-                                                                onCheckedChange={
-                                                                    field.onChange
-                                                                }
-                                                            />
-                                                        </FormControl>
-                                                        <div className="space-y-1 leading-none">
-                                                            <FormLabel>
-                                                                Set as primary
-                                                            </FormLabel>
-
-                                                            <FormMessage />
-                                                        </div>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <DialogFooter>
-                                                <Button type="submit">
-                                                    Submit
-                                                </Button>
-                                                <DialogClose asChild>
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary">
-                                                        Close
-                                                    </Button>
-                                                </DialogClose>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
+                                    <EmailFormDialog
+                                        userId={id}
+                                        mutation={addEmailMutation}
+                                        onSuccess={refetch}
+                                    />
                                 </DialogContent>
                             </Dialog>
                         </CardContent>
                     </Card>
+
                     <Card>
                         <CardHeader>
-                            <CardTitle>Social accounts</CardTitle>
+                            <CardTitle>Social Accounts</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {user.externalAccounts.length === 0 ? (
-                                <div className="bg-blue-50 text-center p-3">
-                                    None
+                        <CardContent>
+                            {user.externalAccounts?.length ? (
+                                <div className="flex flex-col gap-2">
+                                    {user.externalAccounts.map((row) => {
+                                        return (
+                                            <div
+                                                key={row.id}
+                                                className="flex gap-2 items-center justify-start">
+                                                {row.provider ===
+                                                'oauth_google' ? (
+                                                    <>
+                                                        <FcGoogle />
+                                                        <div className="font-bold">
+                                                            Google
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FaGithub />
+                                                        <div className="font-bold">
+                                                            Github
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div className="text-muted-foreground">
+                                                    {row.username ||
+                                                        row.emailAddress}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
-                                <div>
-                                    <UserDetailDataTable
-                                        columns={socialColumns}
-                                        data={user.externalAccounts}
-                                    />
+                                <div className="bg-blue-50 text-center p-3">
+                                    No social accounts linked
                                 </div>
                             )}
                         </CardContent>
                     </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Password</CardTitle>
-                            <CardContent className="py-3 flex justify-between">
-                                <div className="w-full">
-                                    {user.passwordEnabled ? (
-                                        <div className="flex justify-between">
-                                            <div className="flex font-bold gap-2 items-center">
-                                                <TbLock />
-                                                ●●●●●●●●●●
-                                            </div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        className="h-8 w-8 p-0">
-                                                        <span className="sr-only">
-                                                            Open menu
-                                                        </span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>
-                                                        Actions
-                                                    </DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    ) : (
-                                        <div className="w-full flex flex-col">
-                                            <div className="bg-blue-50 text-center p-3">
-                                                None
-                                            </div>
-                                            <div>
-                                                <Dialog>
-                                                    <DialogTrigger>
-                                                        <Button
-                                                            variant="link"
-                                                            className="cursor-pointer">
-                                                            + Set password
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent>
-                                                        <DialogHeader>
-                                                            <DialogTitle>
-                                                                Set password
-                                                            </DialogTitle>
-                                                        </DialogHeader>
-                                                        <Form
-                                                            {...setPasswordForm}>
-                                                            <form
-                                                                onSubmit={setPasswordForm.handleSubmit(
-                                                                    handleSetPassword
-                                                                )}
-                                                                className="space-y-8 max-w-3xl mx-auto py-10">
-                                                                <FormField
-                                                                    control={
-                                                                        setPasswordForm.control
-                                                                    }
-                                                                    name="password"
-                                                                    render={({
-                                                                        field,
-                                                                    }) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>
-                                                                                New
-                                                                                password
-                                                                            </FormLabel>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    type="password"
-                                                                                    placeholder="Enter new password."
-                                                                                    {...field}
-                                                                                />
-                                                                            </FormControl>
-
-                                                                            <FormMessage />
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-
-                                                                <FormField
-                                                                    control={
-                                                                        setPasswordForm.control
-                                                                    }
-                                                                    name="confirm_password"
-                                                                    render={({
-                                                                        field,
-                                                                    }) => (
-                                                                        <FormItem>
-                                                                            <FormLabel>
-                                                                                Confirm
-                                                                                password
-                                                                            </FormLabel>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    type="password"
-                                                                                    placeholder="Enter confirm new password."
-                                                                                    {...field}
-                                                                                />
-                                                                            </FormControl>
-
-                                                                            <FormMessage />
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-
-                                                                <FormField
-                                                                    control={
-                                                                        setPasswordForm.control
-                                                                    }
-                                                                    name="sign_out_of_other_sessions"
-                                                                    render={({
-                                                                        field,
-                                                                    }) => (
-                                                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                                                            <FormControl>
-                                                                                <Checkbox
-                                                                                    checked={
-                                                                                        field.value
-                                                                                    }
-                                                                                    onCheckedChange={
-                                                                                        field.onChange
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <div className="space-y-1 leading-none">
-                                                                                <FormLabel>
-                                                                                    Sign
-                                                                                    out
-                                                                                    all
-                                                                                    sessions
-                                                                                </FormLabel>
-                                                                                <FormDescription>
-                                                                                    Set
-                                                                                    to
-                                                                                    true
-                                                                                    to
-                                                                                    sign
-                                                                                    out
-                                                                                    the
-                                                                                    user
-                                                                                    from
-                                                                                    all
-                                                                                    their
-                                                                                    active
-                                                                                    sessions
-                                                                                    once
-                                                                                    their
-                                                                                    password
-                                                                                    is
-                                                                                    updated.
-                                                                                    This
-                                                                                    parameter
-                                                                                    can
-                                                                                    only
-                                                                                    be
-                                                                                    used
-                                                                                    when
-                                                                                    providing
-                                                                                    a
-                                                                                    password
-                                                                                </FormDescription>
-                                                                                <FormMessage />
-                                                                            </div>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={
-                                                                        setPasswordForm.control
-                                                                    }
-                                                                    name="skip_password_checks"
-                                                                    render={({
-                                                                        field,
-                                                                    }) => (
-                                                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                                                            <FormControl>
-                                                                                <Checkbox
-                                                                                    checked={
-                                                                                        field.value
-                                                                                    }
-                                                                                    onCheckedChange={
-                                                                                        field.onChange
-                                                                                    }
-                                                                                />
-                                                                            </FormControl>
-                                                                            <div className="space-y-1 leading-none">
-                                                                                <FormLabel>
-                                                                                    Skip
-                                                                                    password
-                                                                                    checks
-                                                                                </FormLabel>
-                                                                                <FormDescription>
-                                                                                    Set
-                                                                                    it
-                                                                                    to
-                                                                                    true
-                                                                                    if
-                                                                                    you're
-                                                                                    updating
-                                                                                    the
-                                                                                    user's
-                                                                                    password
-                                                                                    and
-                                                                                    want
-                                                                                    to
-                                                                                    skip
-                                                                                    any
-                                                                                    password
-                                                                                    policy
-                                                                                    settings
-                                                                                    check.
-                                                                                    This
-                                                                                    parameter
-                                                                                    can
-                                                                                    only
-                                                                                    be
-                                                                                    used
-                                                                                    when
-                                                                                    providing
-                                                                                    a
-                                                                                    password
-                                                                                </FormDescription>
-                                                                                <FormMessage />
-                                                                            </div>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <Button type="submit">
-                                                                    Submit
-                                                                </Button>
-                                                            </form>
-                                                        </Form>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
                         </CardHeader>
+                        <CardContent>
+                            {user.passwordEnabled ? (
+                                <div className="flex justify-between items-center">
+                                    <div className="flex gap-2 items-center">
+                                        <TbLock />
+                                        <span>••••••••••</span>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() =>
+                                            setIsPasswordDialogOpen(true)
+                                        }>
+                                        <FaRegEdit />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="bg-blue-50 text-center p-3">
+                                        No password set
+                                    </div>
+                                    <Button
+                                        variant="link"
+                                        onClick={() =>
+                                            setIsPasswordDialogOpen(true)
+                                        }>
+                                        + Set password
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="settings"></TabsContent>
+                <TabsContent value="settings">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Settings</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {/* Add settings content here */}
+                            <p className="text-gray-500">
+                                Settings coming soon...
+                            </p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
+
+            <PasswordDialog
+                open={isPasswordDialogOpen}
+                onOpenChange={setIsPasswordDialogOpen}
+                handleSetPassword={handleSetPassword}
+            />
         </div>
+    );
+}
+
+function EmailFormDialog({
+    userId,
+    mutation,
+    onSuccess,
+}: {
+    userId: string;
+    mutation: any;
+    onSuccess: () => void;
+}) {
+    const form = useForm<z.infer<typeof addEmailFormSchema>>({
+        resolver: zodResolver(addEmailFormSchema),
+        defaultValues: {
+            email_address: '',
+            verified: false,
+            primary: false,
+        },
+    });
+
+    const onSubmit = (values: z.infer<typeof addEmailFormSchema>) => {
+        mutation.mutate({ user_id: userId, ...values }, { onSuccess });
+        form.reset();
+    };
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="email_address"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email address</FormLabel>
+                            <FormControl>
+                                <Input
+                                    placeholder="Enter email address"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="verified"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormLabel>Mark as verified</FormLabel>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="primary"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormLabel>Set as primary</FormLabel>
+                        </FormItem>
+                    )}
+                />
+                <DialogFooter>
+                    <Button type="submit" disabled={mutation.isPending}>
+                        {mutation.isPending ? 'Adding...' : 'Add Email'}
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
     );
 }

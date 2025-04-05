@@ -19,3 +19,22 @@ export const updateUser = async (userId: string, data: any) => {
         data: JSON.stringify(data),
     });
 };
+
+export const deleteUserProfileImage = async (userId: string) => {
+    return await fetchClerkApi(`/users/${userId}/profile_image`, {
+        method: 'DELETE',
+    });
+};
+
+export const uploadUserProfileImage = async (userId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return await fetchClerkApi(`/users/${userId}/profile_image`, {
+        method: 'POST',
+        data: formData,
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
