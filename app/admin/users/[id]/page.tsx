@@ -155,6 +155,12 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem
+                                onClick={handleUpdateEmail(row.original.id, {
+                                    primary: !(
+                                        row.original.id ===
+                                        user.primaryEmailAddressId
+                                    ),
+                                })}
                                 className="cursor-pointer"
                                 disabled={
                                     row.original.id ===
