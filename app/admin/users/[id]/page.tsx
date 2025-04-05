@@ -34,10 +34,31 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { deleteEmail, updateEmail } from '@/api/email/email';
+import { addEmail, deleteEmail, updateEmail } from '@/api/email/email';
 import { toast } from 'sonner';
-import { boolean } from 'zod';
 import { EmailDataForm } from '@/api/email/types';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 interface Params {
     id: string;
@@ -46,8 +67,21 @@ type UpdateEmailParams = {
     emailId: string;
     data: EmailDataForm;
 };
+const addEmailFormSchema = z.object({
+    email_address: z.string().email({ message: 'Invalid email address' }),
+    verified: z.boolean().default(false).optional(),
+    primary: z.boolean().default(false).optional(),
+});
 export default function UserPage({ params }: { params: Promise<Params> }) {
     const router = useRouter();
+    const addEmailForm = useForm<z.infer<typeof addEmailFormSchema>>({
+        resolver: zodResolver(addEmailFormSchema),
+        defaultValues: {
+            email_address: '',
+            primary: false,
+            verified: false,
+        },
+    });
     const unwrappedParams = use(params);
     const { id } = unwrappedParams;
     const [user, setUser] = useState<User>();
@@ -80,6 +114,17 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
             return toast.error(error.message);
         },
     });
+
+    const addEmailMutation = useMutation({
+        mutationFn: (data: EmailDataForm) => addEmail(data),
+        onSuccess: (data) => {
+            refetch();
+            return toast.success('Email Created');
+        },
+        onError: (error) => {
+            return toast.error(error.message);
+        },
+    });
     useEffect(() => {
         if (isSuccess && data) {
             setUser(data);
@@ -107,12 +152,7 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
             </Alert>
         );
     }
-    const handleUpdateEmail = (emailId: string, data: EmailDataForm) => {
-        return (e: React.MouseEvent) => {
-            e.preventDefault();
-            updateEmailMutation.mutate({ emailId, data });
-        };
-    };
+
     const email = user?.emailAddresses[0].emailAddress || 'No email provided';
     const fullName = user?.firstName + ' ' + user?.lastName || 'User';
     const role = user.publicMetadata.role || 'User';
@@ -194,24 +234,6 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
         },
     ];
 
-    function getIcon(provider: string) {
-        switch (provider) {
-            case 'oauth_google':
-                return (
-                    <>
-                        <FcGoogle />
-                        <div className="font-bold">Google</div>
-                    </>
-                );
-            case 'oauth_github':
-                return (
-                    <>
-                        <FaGithub />
-                        <div className="font-bold">Github</div>
-                    </>
-                );
-        }
-    }
     const socialColumns: ColumnDef<ExternalAccount>[] = [
         {
             accessorKey: 'id',
@@ -235,7 +257,37 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
             },
         },
     ];
+
+    function getIcon(provider: string) {
+        switch (provider) {
+            case 'oauth_google':
+                return (
+                    <>
+                        <FcGoogle />
+                        <div className="font-bold">Google</div>
+                    </>
+                );
+            case 'oauth_github':
+                return (
+                    <>
+                        <FaGithub />
+                        <div className="font-bold">Github</div>
+                    </>
+                );
+        }
+    }
+
     const handleUploadAvatar = () => {};
+
+    const handleAddEmail = (values: z.infer<typeof addEmailFormSchema>) => {
+        addEmailMutation.mutate({ user_id: user.id, ...values });
+    };
+    const handleUpdateEmail = (emailId: string, data: EmailDataForm) => {
+        return (e: React.MouseEvent) => {
+            e.preventDefault();
+            updateEmailMutation.mutate({ emailId, data });
+        };
+    };
     return (
         <div className="flex flex-col items-start gap-4 p-4">
             <Button
@@ -333,11 +385,113 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                                 columns={emailColumns}
                                 data={user.emailAddresses}
                             />
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button
+                                        variant="link"
+                                        className="cursor-pointer">
+                                        <FaPlus />
+                                        Add email
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px]">
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            Add new email address
+                                        </DialogTitle>
+                                    </DialogHeader>
+                                    <Form {...addEmailForm}>
+                                        <form
+                                            onSubmit={addEmailForm.handleSubmit(
+                                                handleAddEmail
+                                            )}
+                                            className="space-y-8 py-10">
+                                            <FormField
+                                                control={addEmailForm.control}
+                                                name="email_address"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>
+                                                            Email address
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="Enter email address"
+                                                                type="text"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
 
-                            <Button variant="link" className="cursor-pointer">
-                                <FaPlus />
-                                Add email
-                            </Button>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={addEmailForm.control}
+                                                name="verified"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={
+                                                                    field.value
+                                                                }
+                                                                onCheckedChange={
+                                                                    field.onChange
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        <div className="space-y-1 leading-none">
+                                                            <FormLabel>
+                                                                Mark as verified
+                                                            </FormLabel>
+
+                                                            <FormMessage />
+                                                        </div>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={addEmailForm.control}
+                                                name="primary"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={
+                                                                    field.value
+                                                                }
+                                                                onCheckedChange={
+                                                                    field.onChange
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        <div className="space-y-1 leading-none">
+                                                            <FormLabel>
+                                                                Set as primary
+                                                            </FormLabel>
+
+                                                            <FormMessage />
+                                                        </div>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <DialogFooter>
+                                                <Button type="submit">
+                                                    Submit
+                                                </Button>
+                                                <DialogClose asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary">
+                                                        Close
+                                                    </Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
                         </CardContent>
                     </Card>
                     <Card>

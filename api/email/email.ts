@@ -8,8 +8,15 @@ export const deleteEmail = async (emailId: string) => {
 };
 
 export const updateEmail = async (emailId: string, data: EmailDataForm) => {
-    return fetchClerkApi(`/email/${emailId}`, {
+    return await fetchClerkApi(`/email/${emailId}`, {
         method: 'PATCH',
+        data,
+    });
+};
+
+export const addEmail = async (data: EmailDataForm) => {
+    return await fetchClerkApi(`/email`, {
+        method: 'POST',
         data,
     });
 };
