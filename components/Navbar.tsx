@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn, Menu, X } from 'lucide-react';
-import { MdOutlineAdminPanelSettings } from 'react-icons/md';
-
+import { MdOutlineAdminPanelSettings,MdCalendarToday } from 'react-icons/md';
 const Navbar = () => {
     const { user } = useUser();
     const router = useRouter();
@@ -88,6 +87,15 @@ const Navbar = () => {
                                     />
                                 </UserButton.MenuItems>
                             ) : null}
+                            <UserButton.MenuItems>
+                                    <UserButton.Action
+                                        label="History booking"
+                                        labelIcon={
+                                            <MdCalendarToday />
+                                        }
+                                        onClick={() => router.push('/historybooking')}
+                                    />
+                                </UserButton.MenuItems>
                         </UserButton>
                     </SignedIn>
 

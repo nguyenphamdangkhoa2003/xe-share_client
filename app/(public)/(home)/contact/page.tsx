@@ -19,7 +19,7 @@ export default function ContactPage() {
           <Input type="tel" placeholder="Số điện thoại" className="mb-3" />
           <textarea
             placeholder="Nội dung"
-            rows="4"
+            rows={4}
             className="w-full p-2 border rounded mb-3"
           ></textarea>
           <Button variant='login' className="w-full">
