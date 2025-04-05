@@ -13,7 +13,7 @@ import { TbLock } from 'react-icons/tb';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Link, MoreHorizontal, Trash } from 'lucide-react';
 import { CiMail } from 'react-icons/ci';
-import { use, useState, useEffect } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import { EmailAddress, User } from '@/api/users/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadButton } from '@/components/ButtonUpload';
@@ -21,9 +21,9 @@ import { MdOutlineVerified } from 'react-icons/md';
 import { Badge } from '@/components/ui/badge';
 import { FaPlus } from 'react-icons/fa6';
 import { ColumnDef } from '@tanstack/react-table';
-
+import { CiWarning } from 'react-icons/ci';
 import { UserDetailDataTable } from '@/app/admin/users/[id]/UserDetailTableData';
-import { ExternalAccount } from '@clerk/nextjs/server';
+import { ExternalAccount } from '@/api/users/types';
 import { FaGithub } from 'react-icons/fa';
 import { PersonInformationForm } from '@/components/form/PersonInformationForm';
 import {
@@ -34,31 +34,50 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { deleteEmail } from '@/api/email/email';
+import { deleteEmail, updateEmail } from '@/api/email/email';
 import { toast } from 'sonner';
+import { boolean } from 'zod';
+import { EmailDataForm } from '@/api/email/types';
 
 interface Params {
     id: string;
 }
-export default function UserPage({ params }: { params: Params }) {
+type UpdateEmailParams = {
+    emailId: string;
+    data: EmailDataForm;
+};
+export default function UserPage({ params }: { params: Promise<Params> }) {
     const router = useRouter();
-    const unwrapParams = use<Params>(params) as Params;
-    const { id } = unwrapParams;
+    const unwrappedParams = use(params);
+    const { id } = unwrappedParams;
     const [user, setUser] = useState<User>();
 
     const { data, isLoading, error, isSuccess, refetch } = useQuery({
         queryKey: ['user', id],
         queryFn: () => getUserById(id),
     });
-    const deleteMutation = useMutation({
+    const deleteEmailMutation = useMutation({
         mutationFn: (emailId: string) => deleteEmail(emailId),
         onError: (error) => {
-            return toast.error(error.message);
+            console.log(error);
+            toast.error(error.message);
         },
         onSuccess: (data) => {
             console.log(data);
             toast.success('Deleted successful');
             refetch();
+        },
+    });
+
+    const updateEmailMutation = useMutation({
+        mutationFn: ({ emailId, data }: UpdateEmailParams) =>
+            updateEmail(emailId, data),
+        onSuccess: (data) => {
+            toast.success('Email Updated');
+            refetch();
+        },
+        onError: (error) => {
+            return toast.error(error.message);
         },
     });
     useEffect(() => {
@@ -88,6 +107,12 @@ export default function UserPage({ params }: { params: Params }) {
             </Alert>
         );
     }
+    const handleUpdateEmail = (emailId: string, data: EmailDataForm) => {
+        return (e: React.MouseEvent) => {
+            e.preventDefault();
+            updateEmailMutation.mutate({ emailId, data });
+        };
+    };
     const email = user?.emailAddresses[0].emailAddress || 'No email provided';
     const fullName = user?.firstName + ' ' + user?.lastName || 'User';
     const role = user.publicMetadata.role || 'User';
@@ -102,8 +127,10 @@ export default function UserPage({ params }: { params: Params }) {
                     <span className="font-medium text-gray-400">
                         {row.original.emailAddress}
                     </span>
-                    {row.original.verification.status === 'verified' && (
+                    {row.original.verification ? (
                         <MdOutlineVerified className="text-green-500" />
+                    ) : (
+                        <CiWarning className="text-orange-500" />
                     )}
                     {row.original.id === user.primaryEmailAddressId && (
                         <Badge
@@ -135,15 +162,22 @@ export default function UserPage({ params }: { params: Params }) {
                                 }>
                                 Set as primary
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
-                                Mark as unverified
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={handleUpdateEmail(row.original.id, {
+                                    verified: !row.original.verification,
+                                })}>
+                                Mark as{' '}
+                                {row.original.verification
+                                    ? 'unverified'
+                                    : 'verified'}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="text-red-600 cursor-pointer"
-                                disabled={deleteMutation.isPending}
+                                disabled={deleteEmailMutation.isPending}
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    deleteMutation.mutate(row.original.id);
+                                    deleteEmailMutation.mutate(row.original.id);
                                 }}>
                                 Remove email
                             </DropdownMenuItem>
@@ -310,7 +344,12 @@ export default function UserPage({ params }: { params: Params }) {
                                     None
                                 </div>
                             ) : (
-                                <div></div>
+                                <div>
+                                    <UserDetailDataTable
+                                        columns={socialColumns}
+                                        data={user.externalAccounts}
+                                    />
+                                </div>
                             )}
                         </CardContent>
                     </Card>

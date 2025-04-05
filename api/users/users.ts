@@ -1,4 +1,4 @@
-import { fetchClerkApi } from '../api';
+import { fetchClerkApi } from '../clerkApi';
 
 export const getUsers = async (search?: string) => {
     const defaultParams = {
@@ -15,6 +15,6 @@ export const getUserById = async (userId: string) => {
 export const updateUser = async (userId: string, data: any) => {
     return await fetchClerkApi(`/users/${userId}`, {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        data: JSON.stringify(data),
     });
 };

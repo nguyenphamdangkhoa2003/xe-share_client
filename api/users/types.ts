@@ -28,6 +28,7 @@ export interface PhoneNumber {
 export interface ExternalAccount {
     id: string;
     provider: string;
+    username: string;
     identificationId: string;
     providerUserId: string;
     approvedScopes: string;
