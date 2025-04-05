@@ -1,3 +1,4 @@
+import { SetPasswordData } from '@/api/users/types';
 import { fetchClerkApi } from '../clerkApi';
 
 export const getUsers = async (search?: string) => {

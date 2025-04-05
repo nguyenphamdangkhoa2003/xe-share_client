@@ -5,7 +5,7 @@ import { FaArrowLeftLong } from 'react-icons/fa6';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getInitials } from '@/utils';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getUserById } from '@/api/users/users';
+import { getUserById, updateUser } from '@/api/users/users';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/ui/loading';
 import { FcGoogle } from 'react-icons/fc';
@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Link, MoreHorizontal, Trash } from 'lucide-react';
 import { CiMail } from 'react-icons/ci';
 import React, { use, useState, useEffect } from 'react';
-import { EmailAddress, User } from '@/api/users/types';
+import { EmailAddress, SetPasswordData, User } from '@/api/users/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UploadButton } from '@/components/ButtonUpload';
 import { MdOutlineVerified } from 'react-icons/md';
@@ -50,6 +50,7 @@ import { Input } from '@/components/ui/input';
 import {
     Form,
     FormControl,
+    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -67,11 +68,27 @@ type UpdateEmailParams = {
     emailId: string;
     data: EmailDataForm;
 };
+type SetPasswordParams = {
+    user_id: string;
+    data: SetPasswordData;
+};
 const addEmailFormSchema = z.object({
     email_address: z.string().email({ message: 'Invalid email address' }),
     verified: z.boolean().default(false).optional(),
     primary: z.boolean().default(false).optional(),
 });
+
+const setPasswordFormSchema = z
+    .object({
+        password: z.string().min(8),
+        confirm_password: z.string(),
+        skip_password_checks: z.boolean(),
+        sign_out_of_other_sessions: z.boolean(),
+    })
+    .refine((data) => data.password === data.confirm_password, {
+        message: 'Confirmation password does not match',
+        path: ['password', 'confirm_password'],
+    });
 export default function UserPage({ params }: { params: Promise<Params> }) {
     const router = useRouter();
     const addEmailForm = useForm<z.infer<typeof addEmailFormSchema>>({
@@ -80,6 +97,15 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
             email_address: '',
             primary: false,
             verified: false,
+        },
+    });
+    const setPasswordForm = useForm<z.infer<typeof setPasswordFormSchema>>({
+        resolver: zodResolver(setPasswordFormSchema),
+        defaultValues: {
+            password: '',
+            confirm_password: '',
+            sign_out_of_other_sessions: false,
+            skip_password_checks: false,
         },
     });
     const unwrappedParams = use(params);
@@ -124,6 +150,16 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
         onError: (error) => {
             return toast.error(error.message);
         },
+    });
+
+    const setPasswordMutation = useMutation({
+        mutationFn: ({ user_id, data }: SetPasswordParams) =>
+            updateUser(user_id, data),
+        onSuccess: (data) => {
+            refetch();
+            return toast.success('Update password successful');
+        },
+        onError: (error) => toast.error(error.message),
     });
     useEffect(() => {
         if (isSuccess && data) {
@@ -282,6 +318,14 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
     const handleAddEmail = (values: z.infer<typeof addEmailFormSchema>) => {
         addEmailMutation.mutate({ user_id: user.id, ...values });
     };
+    const handleSetPassword = (
+        values: z.infer<typeof setPasswordFormSchema>
+    ) => {
+        setPasswordMutation.mutate({
+            user_id: user.id,
+            data: values,
+        });
+    };
     const handleUpdateEmail = (emailId: string, data: EmailDataForm) => {
         return (e: React.MouseEvent) => {
             e.preventDefault();
@@ -390,8 +434,7 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                                     <Button
                                         variant="link"
                                         className="cursor-pointer">
-                                        <FaPlus />
-                                        Add email
+                                        + Add email
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[425px]">
@@ -544,8 +587,214 @@ export default function UserPage({ params }: { params: Promise<Params> }) {
                                             </DropdownMenu>
                                         </div>
                                     ) : (
-                                        <div className="w-full bg-blue-50 text-center p-3">
-                                            None
+                                        <div className="w-full flex flex-col">
+                                            <div className="bg-blue-50 text-center p-3">
+                                                None
+                                            </div>
+                                            <div>
+                                                <Dialog>
+                                                    <DialogTrigger>
+                                                        <Button
+                                                            variant="link"
+                                                            className="cursor-pointer">
+                                                            + Set password
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>
+                                                                Set password
+                                                            </DialogTitle>
+                                                        </DialogHeader>
+                                                        <Form
+                                                            {...setPasswordForm}>
+                                                            <form
+                                                                onSubmit={setPasswordForm.handleSubmit(
+                                                                    handleSetPassword
+                                                                )}
+                                                                className="space-y-8 max-w-3xl mx-auto py-10">
+                                                                <FormField
+                                                                    control={
+                                                                        setPasswordForm.control
+                                                                    }
+                                                                    name="password"
+                                                                    render={({
+                                                                        field,
+                                                                    }) => (
+                                                                        <FormItem>
+                                                                            <FormLabel>
+                                                                                New
+                                                                                password
+                                                                            </FormLabel>
+                                                                            <FormControl>
+                                                                                <Input
+                                                                                    type="password"
+                                                                                    placeholder="Enter new password."
+                                                                                    {...field}
+                                                                                />
+                                                                            </FormControl>
+
+                                                                            <FormMessage />
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+
+                                                                <FormField
+                                                                    control={
+                                                                        setPasswordForm.control
+                                                                    }
+                                                                    name="confirm_password"
+                                                                    render={({
+                                                                        field,
+                                                                    }) => (
+                                                                        <FormItem>
+                                                                            <FormLabel>
+                                                                                Confirm
+                                                                                password
+                                                                            </FormLabel>
+                                                                            <FormControl>
+                                                                                <Input
+                                                                                    type="password"
+                                                                                    placeholder="Enter confirm new password."
+                                                                                    {...field}
+                                                                                />
+                                                                            </FormControl>
+
+                                                                            <FormMessage />
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+
+                                                                <FormField
+                                                                    control={
+                                                                        setPasswordForm.control
+                                                                    }
+                                                                    name="sign_out_of_other_sessions"
+                                                                    render={({
+                                                                        field,
+                                                                    }) => (
+                                                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                                                            <FormControl>
+                                                                                <Checkbox
+                                                                                    checked={
+                                                                                        field.value
+                                                                                    }
+                                                                                    onCheckedChange={
+                                                                                        field.onChange
+                                                                                    }
+                                                                                />
+                                                                            </FormControl>
+                                                                            <div className="space-y-1 leading-none">
+                                                                                <FormLabel>
+                                                                                    Sign
+                                                                                    out
+                                                                                    all
+                                                                                    sessions
+                                                                                </FormLabel>
+                                                                                <FormDescription>
+                                                                                    Set
+                                                                                    to
+                                                                                    true
+                                                                                    to
+                                                                                    sign
+                                                                                    out
+                                                                                    the
+                                                                                    user
+                                                                                    from
+                                                                                    all
+                                                                                    their
+                                                                                    active
+                                                                                    sessions
+                                                                                    once
+                                                                                    their
+                                                                                    password
+                                                                                    is
+                                                                                    updated.
+                                                                                    This
+                                                                                    parameter
+                                                                                    can
+                                                                                    only
+                                                                                    be
+                                                                                    used
+                                                                                    when
+                                                                                    providing
+                                                                                    a
+                                                                                    password
+                                                                                </FormDescription>
+                                                                                <FormMessage />
+                                                                            </div>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+                                                                <FormField
+                                                                    control={
+                                                                        setPasswordForm.control
+                                                                    }
+                                                                    name="skip_password_checks"
+                                                                    render={({
+                                                                        field,
+                                                                    }) => (
+                                                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                                                            <FormControl>
+                                                                                <Checkbox
+                                                                                    checked={
+                                                                                        field.value
+                                                                                    }
+                                                                                    onCheckedChange={
+                                                                                        field.onChange
+                                                                                    }
+                                                                                />
+                                                                            </FormControl>
+                                                                            <div className="space-y-1 leading-none">
+                                                                                <FormLabel>
+                                                                                    Skip
+                                                                                    password
+                                                                                    checks
+                                                                                </FormLabel>
+                                                                                <FormDescription>
+                                                                                    Set
+                                                                                    it
+                                                                                    to
+                                                                                    true
+                                                                                    if
+                                                                                    you're
+                                                                                    updating
+                                                                                    the
+                                                                                    user's
+                                                                                    password
+                                                                                    and
+                                                                                    want
+                                                                                    to
+                                                                                    skip
+                                                                                    any
+                                                                                    password
+                                                                                    policy
+                                                                                    settings
+                                                                                    check.
+                                                                                    This
+                                                                                    parameter
+                                                                                    can
+                                                                                    only
+                                                                                    be
+                                                                                    used
+                                                                                    when
+                                                                                    providing
+                                                                                    a
+                                                                                    password
+                                                                                </FormDescription>
+                                                                                <FormMessage />
+                                                                            </div>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+                                                                <Button type="submit">
+                                                                    Submit
+                                                                </Button>
+                                                            </form>
+                                                        </Form>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

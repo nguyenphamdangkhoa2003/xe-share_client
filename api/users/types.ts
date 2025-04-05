@@ -132,3 +132,9 @@ export interface User {
     // Deprecated
     samlAccounts?: any[]; // Deprecated in favor of enterpriseAccounts
 }
+
+export interface SetPasswordData {
+    password: string;
+    skip_password_checks: boolean;
+    sign_out_of_other_sessions: boolean;
+}
