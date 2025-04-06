@@ -47,3 +47,9 @@ export const toggleBanUser = async (userID: string, endpoint: string) => {
         },
     });
 };
+
+export const deleteUser = async (userId: string) => {
+    return await fetchClerkApi(`/users/${userId}`, {
+        method: 'DELETE',
+    });
+};

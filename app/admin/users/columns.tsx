@@ -22,11 +22,9 @@ import { CgProfile } from 'react-icons/cg';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useMutation } from '@tanstack/react-query';
-import { toggleBanUser } from '@/api/users/users';
-import { string } from 'zod';
+import { deleteUser, toggleBanUser } from '@/api/users/users';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { error } from 'console';
 
 export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
     {
@@ -133,6 +131,16 @@ export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
                 },
                 onError: (error) => toast.error(error.message),
             });
+
+            const deleteUserMutation = useMutation({
+                mutationFn: ({ userId }: { userId: string }) =>
+                    deleteUser(userId),
+                onSuccess: (data) => {
+                    refetch();
+                    return toast.success('Delete successful');
+                },
+                onError: (error) => toast.error(error.message),
+            });
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -170,7 +178,13 @@ export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
                                 {row.original.banned ? 'Unban' : 'Ban'}
                             </div>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault(),
+                                    deleteUserMutation.mutate({
+                                        userId: row.original.id,
+                                    });
+                            }}>
                             <div className="flex gap-2 items-center cursor-pointer text-red-500">
                                 <IoTrash className="text-red-500" />
                                 Detele
