@@ -61,6 +61,7 @@ import { FaGithub } from 'react-icons/fa';
 import { getInitials } from '@/utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { EmailFormDialog } from '@/components/EmailFormDialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Params {
     id: string;
@@ -214,12 +215,20 @@ export default function UserPage({
                                 : 'verified'}
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                            className="text-red-600"
                             disabled={deleteEmailMutation.isPending}
-                            onClick={() =>
-                                deleteEmailMutation.mutate(row.original.id)
-                            }>
-                            Remove email
+                            onSelect={(e) => {
+                                e.preventDefault();
+                            }}>
+                            <ConfirmDialog
+                                title="Remove email"
+                                description="Are you sure you want to delete this user's email?"
+                                confirmText="Remove email"
+                                cancelText="Cancel"
+                                onConfirm={() => {
+                                    deleteEmailMutation.mutate(row.original.id);
+                                }}>
+                                <div className="text-red-500">Remove email</div>
+                            </ConfirmDialog>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -322,17 +331,21 @@ export default function UserPage({
                                     onUpload={handleUploadAvatar}
                                     isUploading={uploadAvatarMutation.isPending}
                                 />
-                                <Button
-                                    variant="outline"
-                                    className="cursor-pointer"
-                                    onClick={(e) => {
-                                        e.preventDefault(),
-                                            deleteUserProfileImageMutation.mutate(
-                                                user.id
-                                            );
+                                <ConfirmDialog
+                                    title="Delete profile image"
+                                    description="Are you sure you want to delete this user's profile image?"
+                                    confirmText="Delete profile image"
+                                    onConfirm={() => {
+                                        deleteUserProfileImageMutation.mutate(
+                                            user.id
+                                        );
                                     }}>
-                                    Clear
-                                </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="cursor-pointer">
+                                        Clear
+                                    </Button>
+                                </ConfirmDialog>
                             </div>
                             <PersonInformationForm
                                 id={id}

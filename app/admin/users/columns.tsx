@@ -15,17 +15,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { IoTrash } from 'react-icons/io5';
-
 import { FaBan } from 'react-icons/fa';
 import { CgProfile } from 'react-icons/cg';
-
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useMutation } from '@tanstack/react-query';
 import { deleteUser, toggleBanUser } from '@/api/users/users';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
     {
         id: 'select',
@@ -87,11 +85,7 @@ export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
     {
         accessorKey: 'lastSignInAt',
         header: ({ column }) => (
-            <DataTableColumnHeader
-                column={column}
-                title="Last signed in
-"
-            />
+            <DataTableColumnHeader column={column} title="Last signed in" />
         ),
         cell: ({ row }) => {
             const date = new Date(row.original.lastSignInAt);
@@ -137,10 +131,11 @@ export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
                     deleteUser(userId),
                 onSuccess: (data) => {
                     refetch();
-                    return toast.success('Delete successful');
+                    toast.success('Delete successful');
                 },
                 onError: (error) => toast.error(error.message),
             });
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -160,35 +155,55 @@ export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
                                 View
                             </Link>
                         </DropdownMenuItem>
-
                         <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                            onClick={(e) => {
-                                e.preventDefault();
-                                toggleBanMutation.mutate({
-                                    userId: row.original.id,
-                                    endpoint: row.original.banned
-                                        ? 'unban'
-                                        : 'ban',
-                                });
-                            }}>
-                            <div className="flex gap-2 items-center cursor-pointer text-red-500">
-                                <FaBan className="text-red-500" />
-                                {row.original.banned ? 'Unban' : 'Ban'}
-                            </div>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <ConfirmDialog
+                                triggerText={
+                                    row.original.banned ? 'Unban' : 'Ban'
+                                }
+                                triggerVariant="ghost"
+                                title={`Are you sure you want to ${
+                                    row.original.banned ? 'unban' : 'ban'
+                                } this user?`}
+                                description={`This will ${
+                                    row.original.banned
+                                        ? 'reinstate'
+                                        : 'restrict'
+                                } the user's access to the system.`}
+                                confirmText={
+                                    row.original.banned ? 'Unban' : 'Ban'
+                                }
+                                onConfirm={() =>
+                                    toggleBanMutation.mutate({
+                                        userId: row.original.id,
+                                        endpoint: row.original.banned
+                                            ? 'unban'
+                                            : 'ban',
+                                    })
+                                }>
+                                <div className="flex gap-2 items-center cursor-pointer text-red-500">
+                                    <FaBan className="text-red-500" />
+                                    {row.original.banned ? 'Unban' : 'Ban'}
+                                </div>
+                            </ConfirmDialog>
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={(e) => {
-                                e.preventDefault(),
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <ConfirmDialog
+                                triggerText="Delete"
+                                triggerVariant="ghost"
+                                title="Are you sure you want to delete this user?"
+                                description="This action cannot be undone. This will permanently delete the user and remove their data from our servers."
+                                confirmText="Delete"
+                                onConfirm={() =>
                                     deleteUserMutation.mutate({
                                         userId: row.original.id,
-                                    });
-                            }}>
-                            <div className="flex gap-2 items-center cursor-pointer text-red-500">
-                                <IoTrash className="text-red-500" />
-                                Detele
-                            </div>
+                                    })
+                                }>
+                                <div className="flex gap-2 items-center cursor-pointer text-red-500">
+                                    <IoTrash className="text-red-500" />
+                                    Delete
+                                </div>
+                            </ConfirmDialog>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
