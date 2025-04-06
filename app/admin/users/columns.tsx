@@ -14,15 +14,21 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
-import { CiTrash } from 'react-icons/ci';
-import { MdEditNote } from 'react-icons/md';
+import { IoTrash } from 'react-icons/io5';
 
+import { FaBan } from 'react-icons/fa';
 import { CgProfile } from 'react-icons/cg';
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useMutation } from '@tanstack/react-query';
+import { toggleBanUser } from '@/api/users/users';
+import { string } from 'zod';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { error } from 'console';
 
-export const columns: ColumnDef<User>[] = [
+export const createColumns = (refetch: () => void): ColumnDef<User>[] => [
     {
         id: 'select',
         header: ({ table }) => (
@@ -76,6 +82,7 @@ export const columns: ColumnDef<User>[] = [
                             'No email provided'}
                     </span>
                 </div>
+                {row.original.banned && <FaBan className="text-red-500" />}
             </div>
         ),
     },
@@ -109,8 +116,23 @@ export const columns: ColumnDef<User>[] = [
         },
     },
     {
-        id: 'actions',
+        accessorKey: 'actions',
         cell: ({ row }) => {
+            const router = useRouter();
+            const toggleBanMutation = useMutation({
+                mutationFn: ({
+                    userId,
+                    endpoint,
+                }: {
+                    userId: string;
+                    endpoint: string;
+                }) => toggleBanUser(userId, endpoint),
+                onSuccess: (data) => {
+                    refetch();
+                    toast.success('Operation successful');
+                },
+                onError: (error) => toast.error(error.message),
+            });
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -130,16 +152,27 @@ export const columns: ColumnDef<User>[] = [
                                 View
                             </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <div className="flex gap-2 items-center cursor-pointer">
-                                <MdEditNote />
-                                Update
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                toggleBanMutation.mutate({
+                                    userId: row.original.id,
+                                    endpoint: row.original.banned
+                                        ? 'unban'
+                                        : 'ban',
+                                });
+                            }}>
+                            <div className="flex gap-2 items-center cursor-pointer text-red-500">
+                                <FaBan className="text-red-500" />
+                                {row.original.banned ? 'Unban' : 'Ban'}
                             </div>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem>
                             <div className="flex gap-2 items-center cursor-pointer text-red-500">
-                                <CiTrash className="text-red-500" />
+                                <IoTrash className="text-red-500" />
                                 Detele
                             </div>
                         </DropdownMenuItem>

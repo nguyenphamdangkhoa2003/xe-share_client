@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { columns } from './columns';
+import { createColumns } from './columns';
 import { DataTable } from './data-table';
 import { useQuery } from '@tanstack/react-query';
 import { getUsers } from '@/api/users/users';
@@ -13,7 +13,7 @@ import Loading from '@/components/ui/loading';
 function UsersPage() {
     const [searchTerm, setSearchTerm] = useState<string>('');
 
-    const { data, isLoading, isError, error } = useQuery({
+    const { data, isLoading, isError, error, refetch } = useQuery({
         queryKey: [searchTerm],
         queryFn: () => getUsers(searchTerm),
     });
@@ -57,7 +57,10 @@ function UsersPage() {
                         className="max-w-sm"
                     />
                 </div>
-                <DataTable columns={columns} data={data?.data || []} />
+                <DataTable
+                    columns={createColumns(refetch)}
+                    data={data?.data || []}
+                />
             </div>
         </div>
     );

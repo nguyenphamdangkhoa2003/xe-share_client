@@ -38,3 +38,12 @@ export const uploadUserProfileImage = async (userId: string, file: File) => {
         },
     });
 };
+
+export const toggleBanUser = async (userID: string, endpoint: string) => {
+    return await fetchClerkApi(`/users/${userID}/toggle-ban`, {
+        method: 'POST',
+        data: {
+            endpoint,
+        },
+    });
+};

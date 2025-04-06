@@ -129,6 +129,9 @@ export interface User {
     createOrganizationsLimit: number | null;
     deleteSelfEnabled: boolean;
 
+    banned: boolean;
+    locked: boolean;
+
     // Deprecated
     samlAccounts?: any[]; // Deprecated in favor of enterpriseAccounts
 }

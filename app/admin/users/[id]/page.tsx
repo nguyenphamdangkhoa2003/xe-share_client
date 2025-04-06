@@ -35,7 +35,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter,
 } from '@/components/ui/dialog';
 
 import PasswordDialog, {
@@ -50,7 +49,7 @@ import {
 
 // Icon imports
 import { FaArrowLeftLong } from 'react-icons/fa6';
-import { FaRegEdit } from 'react-icons/fa';
+import { FaBan, FaRegEdit } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { TbLock } from 'react-icons/tb';
 import { AlertCircle, MoreHorizontal, Trash } from 'lucide-react';
@@ -281,7 +280,15 @@ export default function UserPage({
                     <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
-                    <h2 className="text-xl font-semibold">{fullName}</h2>
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-semibold">{fullName}</h2>
+                        {user.banned && (
+                            <div className="text-sm text-red-500 flex items-center gap-1 font-bold">
+                                <FaBan className="text-red-500" />
+                                Banned
+                            </div>
+                        )}
+                    </div>
                     <p className="text-gray-600">{primaryEmail}</p>
                     <p className="text-sm text-blue-600">Role: {role}</p>
                 </div>
