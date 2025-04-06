@@ -17,12 +17,7 @@ import {
 import { addEmail, deleteEmail, updateEmail } from '@/api/email/email';
 
 // Type imports
-import {
-    User,
-    EmailAddress,
-    ExternalAccount,
-    SetPasswordData,
-} from '@/api/users/types';
+import { User, EmailAddress, SetPasswordData } from '@/api/users/types';
 import { EmailDataForm } from '@/api/email/types';
 // Component imports
 import { Button } from '@/components/ui/button';
@@ -42,16 +37,7 @@ import {
     DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import PasswordDialog, {
     setPasswordFormSchema,
 } from '@/components/PasswordDialog';
@@ -75,16 +61,11 @@ import { FaGithub } from 'react-icons/fa';
 // Utility imports
 import { getInitials } from '@/utils';
 import { ColumnDef } from '@tanstack/react-table';
+import { EmailFormDialog } from '@/components/EmailFormDialog';
 
 interface Params {
     id: string;
 }
-
-const addEmailFormSchema = z.object({
-    email_address: z.string().email({ message: 'Invalid email address' }),
-    verified: z.boolean().default(false).optional(),
-    primary: z.boolean().default(false).optional(),
-});
 
 export default function UserPage({
     params: paramsPromise,
@@ -165,6 +146,11 @@ export default function UserPage({
             refetch();
         },
         onError: (error) => toast.error(error.message),
+    });
+
+    const setIsYouCanDeleteYouraccount = useMutation({
+        mutationFn: ({ userId, data }: { userId: string; data: object }) =>
+            updateUser(userId, data),
     });
     // Table column definitions
     const emailColumns: ColumnDef<EmailAddress>[] = [
@@ -325,7 +311,10 @@ export default function UserPage({
                                         {getInitials(fullName)}
                                     </AvatarFallback>
                                 </Avatar>
-                                <UploadButton onUpload={handleUploadAvatar} />
+                                <UploadButton
+                                    onUpload={handleUploadAvatar}
+                                    isUploading={uploadAvatarMutation.isPending}
+                                />
                                 <Button
                                     variant="outline"
                                     className="cursor-pointer"
@@ -461,13 +450,33 @@ export default function UserPage({
                 <TabsContent value="settings">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Settings</CardTitle>
+                            <CardTitle>User permissions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {/* Add settings content here */}
-                            <p className="text-gray-500">
-                                Settings coming soon...
-                            </p>
+                            <label className="inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    value=""
+                                    onChange={(e) => {
+                                        e.preventDefault(),
+                                            setIsYouCanDeleteYouraccount.mutate(
+                                                {
+                                                    userId: user.id,
+                                                    data: {
+                                                        delete_self_enabled:
+                                                            !user.deleteSelfEnabled,
+                                                    },
+                                                }
+                                            );
+                                    }}
+                                    defaultChecked={user.deleteSelfEnabled}
+                                    className="sr-only peer"
+                                />
+                                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                                <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                    Allow user delete to their account
+                                </span>
+                            </label>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -479,87 +488,5 @@ export default function UserPage({
                 handleSetPassword={handleSetPassword}
             />
         </div>
-    );
-}
-
-function EmailFormDialog({
-    userId,
-    mutation,
-    onSuccess,
-}: {
-    userId: string;
-    mutation: any;
-    onSuccess: () => void;
-}) {
-    const form = useForm<z.infer<typeof addEmailFormSchema>>({
-        resolver: zodResolver(addEmailFormSchema),
-        defaultValues: {
-            email_address: '',
-            verified: false,
-            primary: false,
-        },
-    });
-
-    const onSubmit = (values: z.infer<typeof addEmailFormSchema>) => {
-        mutation.mutate({ user_id: userId, ...values }, { onSuccess });
-        form.reset();
-    };
-
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                    control={form.control}
-                    name="email_address"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Email address</FormLabel>
-                            <FormControl>
-                                <Input
-                                    placeholder="Enter email address"
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="verified"
-                    render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                                <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                            </FormControl>
-                            <FormLabel>Mark as verified</FormLabel>
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="primary"
-                    render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                                <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                            </FormControl>
-                            <FormLabel>Set as primary</FormLabel>
-                        </FormItem>
-                    )}
-                />
-                <DialogFooter>
-                    <Button type="submit" disabled={mutation.isPending}>
-                        {mutation.isPending ? 'Adding...' : 'Add Email'}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </Form>
     );
 }
