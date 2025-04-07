@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { updateUser } from '@/api/users/users';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 // Schema validation
 const formSchema = z.object({
@@ -42,7 +43,6 @@ type PersonInformation = {
 export function PersonInformationForm(params: PersonInformationFormProps) {
     const queryClient = useQueryClient();
 
-    // 1. Khai báo form
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -51,7 +51,6 @@ export function PersonInformationForm(params: PersonInformationFormProps) {
         },
     });
 
-    // 2. Tạo mutation với TanStack Query
     const { mutate, isPending } = useMutation<
         PersonInformation,
         Error,
@@ -62,7 +61,6 @@ export function PersonInformationForm(params: PersonInformationFormProps) {
             return response.data;
         },
         onSuccess: (data) => {
-            // Xử lý khi API call thành công
             queryClient.invalidateQueries({ queryKey: ['profile'] });
             toast.message('Profile updated successfully', {
                 description: `Hello ${data.first_name} ${data.last_name}!`,
@@ -74,7 +72,6 @@ export function PersonInformationForm(params: PersonInformationFormProps) {
         },
     });
 
-    // 3. Xử lý submit form
     function onSubmit(values: z.infer<typeof formSchema>) {
         mutate(values);
     }
@@ -83,57 +80,75 @@ export function PersonInformationForm(params: PersonInformationFormProps) {
         <Form {...form}>
             <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="flex gap-16">
-                {/* Field Firstname */}
-                <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                        <FormItem className="grid w-full max-w-sm items-center gap-1.5">
-                            <FormLabel>Firstname</FormLabel>
-                            <FormControl>
-                                <Input
-                                    placeholder="Firstname"
-                                    {...field}
-                                    disabled={isPending}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                className="space-y-4 md:space-y-6"
+            >
+                <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full">
+                    {/* First Name Field */}
+                    <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>First name</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder="First name"
+                                        {...field}
+                                        disabled={isPending}
+                                        className="w-full"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                {/* Field Lastname */}
-                <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                        <FormItem className="grid w-full max-w-sm items-center gap-1.5">
-                            <FormLabel>Lastname</FormLabel>
-                            <FormControl>
-                                <Input
-                                    placeholder="Lastname"
-                                    {...field}
-                                    disabled={isPending}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                    {/* Last Name Field */}
+                    <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Last name</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder="Last name"
+                                        {...field}
+                                        disabled={isPending}
+                                        className="w-full"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
-                {/* Button group */}
-                <div className="flex items-end gap-2">
-                    <Button type="submit" disabled={isPending}>
-                        {isPending ? 'Saving...' : 'Save'}
+                {/* Button Group - Adjusted for mobile */}
+                
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-end">
+                    <Button 
+                        type="submit" 
+                        disabled={isPending}
+                        className="w-full sm:w-auto"
+                    >
+                        {isPending ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : 'Save'}
                     </Button>
                     <Button
                         variant="outline"
                         type="button"
                         onClick={() => form.reset()}
-                        disabled={isPending}>
+                        disabled={isPending}
+                        className="w-full sm:w-auto"
+                    >
                         Cancel
                     </Button>
+                    
                 </div>
             </form>
         </Form>
